@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: habitflow-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # You will set this manually in the Render dashboard
+      - key: JWT_SECRET
+        sync: false # Set a strong, random secret manually
+      - key: FRONTEND_URL
+        sync: false # Point to your deployed frontend (e.g. Vercel URL)
+    autoDeploy: false

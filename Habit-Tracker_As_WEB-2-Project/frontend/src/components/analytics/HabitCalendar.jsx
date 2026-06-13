@@ -1,0 +1,245 @@
+import { useState } from 'react';
+import { 
+  format, startOfMonth, endOfMonth, eachDayOfInterval, 
+  isFuture, isBefore, addMonths, subMonths, getDay 
+} from 'date-fns';
+import { ChevronLeft, ChevronRight, X, CheckCircle, Clock, Moon, Activity } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+
+const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
+  const { user } = useAuth();
+  const [selectedDateStr, setSelectedDateStr] = useState(null);
+  const [activeHabit, setActiveHabit] = useState('namaz');
+
+  const start = startOfMonth(selectedMonth);
+  const end = endOfMonth(selectedMonth);
+  const daysInMonth = eachDayOfInterval({ start, end });
+  const startDayOfWeek = getDay(start); // 0 = Sunday
+
+  const creationDate = new Date(user?.createdAt || user?.dob || new Date());
+  
+  const canGoPrev = !isBefore(startOfMonth(subMonths(selectedMonth, 1)), startOfMonth(creationDate));
+  const canGoNext = !isFuture(startOfMonth(addMonths(selectedMonth, 1)));
+
+  const handlePrev = () => { if (canGoPrev) onMonthChange(subMonths(selectedMonth, 1)); };
+  const handleNext = () => { if (canGoNext) onMonthChange(addMonths(selectedMonth, 1)); };
+
+  // Helper to format local date consistently
+  const getLocalDateStr = (d) => {
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${yr}-${mo}-${da}`;
+  };
+
+  /**
+   * Get the cell color classes based on selected habit and day data.
+   * Returns Tailwind/CSS class string.
+   */
+  const getCellStyle = (dateStr, isFutureDate) => {
+    if (isFutureDate) return { className: 'opacity-30 cursor-not-allowed bg-gray-50 border-gray-100 border-dashed', style: {} };
+
+    if (activeHabit === 'namaz') {
+      const count = calendarData?.namazCounts?.[dateStr];
+      // count === undefined means no record in DB → white
+      if (count === undefined || count === null) {
+        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      }
+      // 0 prayers → red
+      if (count === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
+      if (count === 1) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
+      if (count === 2) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
+      if (count === 3) return { className: 'border-yellow-400 shadow-sm', style: { backgroundColor: '#fbbf24' } };
+      if (count === 4) return { className: 'border-green-300 shadow-sm', style: { backgroundColor: '#c8e6c9' } };
+      // 5 → full green
+      return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
+    }
+
+    if (activeHabit === 'work') {
+      const minutes = calendarData?.workMinutes?.[dateStr];
+      if (minutes === undefined || minutes === null) {
+        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      }
+      if (minutes === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
+      if (minutes < 30) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
+      if (minutes < 60) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
+      if (minutes < 120) return { className: 'border-green-300 shadow-sm', style: { backgroundColor: '#c8e6c9' } };
+      return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
+    }
+
+
+    if (activeHabit === 'exercise') {
+      const minutes = calendarData?.exerciseMinutes?.[dateStr];
+      if (minutes === undefined || minutes === null) {
+        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      }
+      if (minutes === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
+      if (minutes < 20) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
+      if (minutes < 40) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
+      if (minutes < 60) return { className: 'border-green-300 shadow-sm', style: { backgroundColor: '#c8e6c9' } };
+      return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
+    }
+
+    if (activeHabit === 'productivity') {
+      const count = calendarData?.productivityCounts?.[dateStr];
+      if (count === undefined || count === null) {
+        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      }
+      if (count === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
+      if (count < 3) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
+      if (count < 5) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
+      if (count < 8) return { className: 'border-green-300 shadow-sm', style: { backgroundColor: '#c8e6c9' } };
+      return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
+    }
+
+    // Default: white
+    return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+  };
+
+  const hasAnyData = (dateStr) => {
+    if (activeHabit === 'namaz') return calendarData?.namazCounts?.[dateStr] !== undefined;
+    if (activeHabit === 'work') return calendarData?.workMinutes?.[dateStr] !== undefined;
+    if (activeHabit === 'exercise') return calendarData?.exerciseMinutes?.[dateStr] !== undefined;
+    if (activeHabit === 'productivity') return calendarData?.productivityCounts?.[dateStr] !== undefined;
+    return false;
+  };
+
+  const getDayDetails = (dateStr) => {
+    if (!calendarData) return [];
+    const details = [];
+    if (calendarData.namaz?.includes(dateStr)) details.push({ icon: <Moon size={14}/>, label: 'Prayers Logged', color: 'text-emerald-600' });
+    if (calendarData.work?.includes(dateStr)) details.push({ icon: <Clock size={14}/>, label: 'Work Session', color: 'text-blue-600' });
+    if (calendarData.exercise?.includes(dateStr)) details.push({ icon: <Activity size={14}/>, label: 'Exercise', color: 'text-rose-600' });
+    if (calendarData.productivity?.includes(dateStr)) details.push({ icon: <CheckCircle size={14}/>, label: 'Tasks Completed', color: 'text-amber-600' });
+    return details;
+  };
+
+  // Legend labels per habit
+  const legendLabels = {
+    namaz: ['No data', '0 prayers', '1–2 prayers', '3–4 prayers', '5 prayers'],
+    work: ['No data', '0 min', '1–30 min', '30–60 min', '60–120 min', '>120 min'],
+    exercise: ['No data', '0 min', '1–20 min', '20–40 min', '40–60 min', '>60 min'],
+    productivity: ['No data', '0 tasks', '1–2 tasks', '3–4 tasks', '5–7 tasks', '8+ tasks'],
+  };
+
+  return (
+    <div className="google-card p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-[#202124]">{format(selectedMonth, 'MMMM yyyy')}</h2>
+          <div className="mt-1">
+             <select 
+               value={activeHabit} 
+               onChange={e => setActiveHabit(e.target.value)}
+               className="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-semibold text-[#5f6368] hover:border-gray-300 focus:outline-none focus:border-[#1a73e8] transition"
+             >
+               <option value="namaz">Namaz Heatmap</option>
+               <option value="work">Deep Work Heatmap</option>
+               <option value="exercise">Exercise Heatmap</option>
+               <option value="productivity">Tasks Heatmap</option>
+             </select>
+          </div>
+        </div>
+        <div className="flex space-x-2">
+          <button 
+            onClick={handlePrev} 
+            disabled={!canGoPrev}
+            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >
+            <ChevronLeft className="text-[#3c4043]" />
+          </button>
+          <button 
+            onClick={handleNext} 
+            disabled={!canGoNext}
+            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >
+            <ChevronRight className="text-[#3c4043]" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-2">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center text-xs font-semibold text-[#5f6368] uppercase pb-2">
+            {day}
+          </div>
+        ))}
+        
+        {/* Padding for start of month */}
+        {Array.from({ length: startDayOfWeek }).map((_, i) => (
+          <div key={`pad-${i}`} className="h-10 sm:h-14 md:h-20 bg-transparent rounded-lg"></div>
+        ))}
+
+        {daysInMonth.map(date => {
+          const dateStr = getLocalDateStr(date);
+          const isFutureDate = isFuture(date);
+          const { className: colorClass, style: colorStyle } = getCellStyle(dateStr, isFutureDate);
+          const hasData = !isFutureDate && hasAnyData(dateStr);
+          
+          return (
+            <div 
+              key={dateStr}
+              onClick={() => { if (!isFutureDate) setSelectedDateStr(dateStr) }}
+              style={colorStyle}
+              className={`h-10 sm:h-14 md:h-20 rounded-xl border flex flex-col justify-between p-1 sm:p-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95 ${isFutureDate ? 'opacity-30 cursor-not-allowed bg-gray-50 border-gray-100 border-dashed' : colorClass}`}
+            >
+               <span className="text-sm font-semibold opacity-80">{format(date, 'd')}</span>
+               {hasData && (
+                 <div className="w-full h-1 sm:h-2 rounded-full bg-black/10 mt-auto overflow-hidden">
+                   <div className="h-full bg-black/20 w-full"></div>
+                 </div>
+               )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6 flex flex-wrap justify-between text-xs text-[#5f6368] font-medium border-t border-[#dadce0] pt-4">
+        <span>Less Consistent</span>
+        <div className="flex space-x-1">
+          <div className="w-4 h-4 rounded bg-white border border-[#dadce0]" title="No data"></div>
+          <div className="w-4 h-4 rounded border border-red-300" style={{ backgroundColor: '#ffcdd2' }} title="0 / Missed"></div>
+          <div className="w-4 h-4 rounded border border-yellow-300" style={{ backgroundColor: '#fff9c4' }}></div>
+          <div className="w-4 h-4 rounded border border-orange-300" style={{ backgroundColor: '#ffe0b2' }}></div>
+          <div className="w-4 h-4 rounded border border-green-300" style={{ backgroundColor: '#c8e6c9' }}></div>
+          <div className="w-4 h-4 rounded border border-green-500" style={{ backgroundColor: '#a5d6a7' }}></div>
+        </div>
+        <span>More Consistent</span>
+      </div>
+
+      {/* Detail Modal overlay */}
+      {selectedDateStr && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedDateStr(null)}>
+          <div className="google-card w-full max-w-sm p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-4 bg-[#1a73e8] text-white">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-2xl font-bold">{format(new Date(selectedDateStr), 'MMM d, yyyy')}</h3>
+                  <p className="opacity-90 mt-1">Activity Summary</p>
+                </div>
+                <button onClick={() => setSelectedDateStr(null)} className="p-1 rounded-full hover:bg-black/10 text-white"><X size={20}/></button>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-3">
+              {getDayDetails(selectedDateStr).length === 0 ? (
+                <p className="text-[#5f6368] text-center py-6 text-sm">No habits logged on this date.</p>
+              ) : (
+                getDayDetails(selectedDateStr).map((detail, idx) => (
+                  <div key={idx} className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className={`p-2 rounded-full bg-white shadow-sm mr-3 ${detail.color}`}>{detail.icon}</div>
+                    <span className="font-semibold text-gray-800 text-sm">{detail.label}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default HabitCalendar;

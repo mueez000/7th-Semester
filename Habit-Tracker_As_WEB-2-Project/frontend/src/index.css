@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-google-blue: #1a73e8;
+  --color-google-blue-hover: #174ea6;
+  --color-google-blue-light: #e8f0fe;
+  
+  --color-google-green: #34a853;
+  --color-google-green-light: #e6f4ea;
+  
+  --color-google-red: #ea4335;
+  --color-google-red-light: #fce8e6;
+  
+  --color-google-yellow: #fbbc04;
+  --color-google-yellow-light: #fef7e0;
+  
+  --color-primary-50: #e8f0fe;
+  --color-primary-100: #d2e3fc;
+  --color-primary-500: #1a73e8;
+  --color-primary-600: #174ea6;
+  --color-primary-700: #1967d2;
+}
+
+@utility bg-gradient-google {
+  background: linear-gradient(135deg, var(--color-google-blue) 0%, #8ab4f8 100%);
+}
+@utility bg-gradient-coral {
+  background: linear-gradient(135deg, var(--color-google-red) 0%, #f28b82 100%);
+}
+@utility bg-gradient-mint {
+  background: linear-gradient(135deg, var(--color-google-green) 0%, #81c995 100%);
+}
+@utility bg-gradient-amber {
+  background: linear-gradient(135deg, var(--color-google-yellow) 0%, #fdd663 100%);
+}
+
+body {
+  @apply bg-[#f8f9fa] text-[#202124] antialiased;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.google-card {
+  @apply bg-white border border-[#dadce0] rounded-[24px] transition-all duration-300 ease-out cursor-default;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+}
+
+.google-card:hover {
+  @apply -translate-y-1;
+  box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1), 0 8px 16px -8px rgba(0,0,0,0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
+}
+
+.btn-primary {
+  @apply bg-[#1a73e8] hover:bg-[#174ea6] text-white font-bold py-2.5 px-6 rounded-full transition-all active:scale-[0.98] shadow-sm hover:shadow-md;
+}

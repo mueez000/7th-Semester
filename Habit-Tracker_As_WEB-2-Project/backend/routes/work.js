@@ -1,0 +1,15 @@
+import express from 'express';
+import { requireAuth } from '../middleware/auth.js';
+import { startWorkSession, stopWorkSession, getTodayWork, getMonthlyWorkStats, deleteWorkSession } from '../controllers/workController.js';
+
+const router = express.Router();
+
+router.use(requireAuth);
+
+router.post('/start', startWorkSession);
+router.post('/stop', stopWorkSession);
+router.delete('/session/:id', deleteWorkSession);
+router.get('/today', getTodayWork);
+router.get('/monthly', getMonthlyWorkStats);
+
+export default router;
