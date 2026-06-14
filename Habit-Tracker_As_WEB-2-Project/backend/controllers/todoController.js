@@ -2,6 +2,7 @@ import TodoList from '../models/TodoList.js';
 import TodoTask from '../models/TodoTask.js';
 import WorkSession from '../models/WorkSession.js';
 import { awardXP } from '../services/gamification.js';
+import { progressQuest } from '../services/questService.js';
 
 // --- LISTS ---
 export const getLists = async (req, res, next) => {
@@ -101,6 +102,7 @@ export const updateTask = async (req, res, next) => {
     
     if (req.body.status === 'completed' && task.status !== 'completed') {
       await awardXP(req.userId, 15, 'todo', task._id);
+      await progressQuest(req.userId, 'todo', 1);
     } else if (req.body.status && req.body.status !== 'completed' && task.status === 'completed') {
       await awardXP(req.userId, -15, 'todo_undo', task._id);
     }
@@ -144,6 +146,7 @@ export const completeTask = async (req, res, next) => {
     
     if (task.status !== 'completed') {
       await awardXP(req.userId, 15, 'todo', task._id);
+      await progressQuest(req.userId, 'todo', 1);
     }
     
     res.json({ success: true, data: updated });

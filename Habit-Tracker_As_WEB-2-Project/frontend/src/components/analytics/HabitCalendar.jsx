@@ -3,7 +3,7 @@ import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, 
   isFuture, isBefore, addMonths, subMonths, getDay 
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, X, CheckCircle, Clock, Moon, Activity } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, CheckCircle, Clock, Moon, Activity, Smartphone, BookOpen, Shield, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
@@ -92,6 +92,34 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
     }
 
+    if (activeHabit === 'social') {
+      const minutes = calendarData?.socialMinutes?.[dateStr];
+      if (minutes === undefined || minutes === null) return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      if (minutes === 0) return { className: 'border-yellow-100 shadow-sm', style: { backgroundColor: '#fffde7' } };
+      if (minutes < 15) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
+      if (minutes < 30) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
+      if (minutes < 60) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
+      return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#ef5350' } };
+    }
+
+    if (activeHabit === 'reading') {
+      const pages = calendarData?.readingPages?.[dateStr];
+      if (pages === undefined || pages === null) return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      if (pages === 0) return { className: 'border-amber-100 shadow-sm', style: { backgroundColor: '#fff8e1' } };
+      if (pages < 10) return { className: 'border-amber-200 shadow-sm', style: { backgroundColor: '#ffecb3' } };
+      if (pages < 30) return { className: 'border-amber-300 shadow-sm', style: { backgroundColor: '#ffe082' } };
+      if (pages < 50) return { className: 'border-amber-500 shadow-sm', style: { backgroundColor: '#ffca28' } };
+      return { className: 'border-amber-600 shadow-sm', style: { backgroundColor: '#ffb300' } };
+    }
+
+    if (activeHabit === 'streak') {
+      const isActive = calendarData?.streak?.includes(dateStr);
+      const isRelapse = calendarData?.streakRelapses?.includes(dateStr);
+      if (!isActive) return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      if (isRelapse) return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#ef5350' } }; // red for relapse
+      return { className: 'border-purple-500 shadow-sm', style: { backgroundColor: '#d8b4fe' } }; // purple for active
+    }
+
     // Default: white
     return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
   };
@@ -101,6 +129,9 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (activeHabit === 'work') return calendarData?.workMinutes?.[dateStr] !== undefined;
     if (activeHabit === 'exercise') return calendarData?.exerciseMinutes?.[dateStr] !== undefined;
     if (activeHabit === 'productivity') return calendarData?.productivityCounts?.[dateStr] !== undefined;
+    if (activeHabit === 'social') return calendarData?.socialMinutes?.[dateStr] !== undefined;
+    if (activeHabit === 'reading') return calendarData?.readingPages?.[dateStr] !== undefined;
+    if (activeHabit === 'streak') return calendarData?.streak?.includes(dateStr);
     return false;
   };
 
@@ -111,6 +142,10 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (calendarData.work?.includes(dateStr)) details.push({ icon: <Clock size={14}/>, label: 'Work Session', color: 'text-blue-600' });
     if (calendarData.exercise?.includes(dateStr)) details.push({ icon: <Activity size={14}/>, label: 'Exercise', color: 'text-rose-600' });
     if (calendarData.productivity?.includes(dateStr)) details.push({ icon: <CheckCircle size={14}/>, label: 'Tasks Completed', color: 'text-amber-600' });
+    if (calendarData.social?.includes(dateStr)) details.push({ icon: <Smartphone size={14}/>, label: 'Social Media Logged', color: 'text-pink-600' });
+    if (calendarData.reading?.includes(dateStr)) details.push({ icon: <BookOpen size={14}/>, label: 'Reading Logged', color: 'text-amber-600' });
+    if (calendarData.streak?.includes(dateStr)) details.push({ icon: <Shield size={14}/>, label: 'Streak Active', color: 'text-purple-600' });
+    if (calendarData.streakRelapses?.includes(dateStr)) details.push({ icon: <AlertTriangle size={14}/>, label: 'Streak Relapsed', color: 'text-red-600' });
     return details;
   };
 
@@ -120,6 +155,7 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     work: ['No data', '0 min', '1–30 min', '30–60 min', '60–120 min', '>120 min'],
     exercise: ['No data', '0 min', '1–20 min', '20–40 min', '40–60 min', '>60 min'],
     productivity: ['No data', '0 tasks', '1–2 tasks', '3–4 tasks', '5–7 tasks', '8+ tasks'],
+    streak: ['No tracking', 'Active', 'Relapsed']
   };
 
   return (
@@ -137,6 +173,9 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
                <option value="work">Deep Work Heatmap</option>
                <option value="exercise">Exercise Heatmap</option>
                <option value="productivity">Tasks Heatmap</option>
+               <option value="social">Social Media Heatmap</option>
+               <option value="reading">Reading Heatmap</option>
+               <option value="streak">Commitment Streak</option>
              </select>
           </div>
         </div>
@@ -196,16 +235,30 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
 
       {/* Legend */}
       <div className="mt-6 flex flex-wrap justify-between text-xs text-[#5f6368] font-medium border-t border-[#dadce0] pt-4">
-        <span>Less Consistent</span>
-        <div className="flex space-x-1">
-          <div className="w-4 h-4 rounded bg-white border border-[#dadce0]" title="No data"></div>
-          <div className="w-4 h-4 rounded border border-red-300" style={{ backgroundColor: '#ffcdd2' }} title="0 / Missed"></div>
-          <div className="w-4 h-4 rounded border border-yellow-300" style={{ backgroundColor: '#fff9c4' }}></div>
-          <div className="w-4 h-4 rounded border border-orange-300" style={{ backgroundColor: '#ffe0b2' }}></div>
-          <div className="w-4 h-4 rounded border border-green-300" style={{ backgroundColor: '#c8e6c9' }}></div>
-          <div className="w-4 h-4 rounded border border-green-500" style={{ backgroundColor: '#a5d6a7' }}></div>
-        </div>
-        <span>More Consistent</span>
+        {activeHabit === 'streak' ? (
+          <>
+            <span>Legend</span>
+            <div className="flex space-x-1">
+              <div className="w-4 h-4 rounded bg-white border border-[#dadce0]" title="No tracking"></div>
+              <div className="w-4 h-4 rounded border border-purple-500" style={{ backgroundColor: '#d8b4fe' }} title="Active Streak"></div>
+              <div className="w-4 h-4 rounded border border-red-500" style={{ backgroundColor: '#ef5350' }} title="Relapsed"></div>
+            </div>
+            <span></span>
+          </>
+        ) : (
+          <>
+            <span>Less Consistent</span>
+            <div className="flex space-x-1">
+              <div className="w-4 h-4 rounded bg-white border border-[#dadce0]" title="No data"></div>
+              <div className="w-4 h-4 rounded border border-red-300" style={{ backgroundColor: '#ffcdd2' }} title="0 / Missed"></div>
+              <div className="w-4 h-4 rounded border border-yellow-300" style={{ backgroundColor: '#fff9c4' }}></div>
+              <div className="w-4 h-4 rounded border border-orange-300" style={{ backgroundColor: '#ffe0b2' }}></div>
+              <div className="w-4 h-4 rounded border border-green-300" style={{ backgroundColor: '#c8e6c9' }}></div>
+              <div className="w-4 h-4 rounded border border-green-500" style={{ backgroundColor: '#a5d6a7' }}></div>
+            </div>
+            <span>More Consistent</span>
+          </>
+        )}
       </div>
 
       {/* Detail Modal overlay */}

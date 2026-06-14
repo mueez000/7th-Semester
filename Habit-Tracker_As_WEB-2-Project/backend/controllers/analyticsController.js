@@ -1,8 +1,10 @@
 import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
 import ExerciseLog from '../models/ExerciseLog.js';
-
 import TodoTask from '../models/TodoTask.js';
+import SocialMediaSession from '../models/SocialMediaSession.js';
+import ReadingLog from '../models/ReadingLog.js';
+import StreakLog from '../models/StreakLog.js';
 
 export const getAnalyticsOverview = async (req, res, next) => {
   try {
@@ -46,8 +48,6 @@ export const getAnalyticsOverview = async (req, res, next) => {
       };
     });
 
-    // Per-day namaz prayer counts: dateStr -> count (0-5)
-    // Only dates that have a log record will be in this map
     const namazCounts = {};
     namazLogs.forEach(log => {
       const dateStr = formatLocalDate(log.date);
@@ -60,7 +60,6 @@ export const getAnalyticsOverview = async (req, res, next) => {
       namazCounts[dateStr] = count;
     });
 
-    // Calendar: list of dates with at least 1 prayer (for popup detail)
     const namazActiveDates = namazLogs
       .filter(log => (log.fajr || log.zuhr || log.asr || log.maghrib || log.isha))
       .map(log => formatLocalDate(log.date));
@@ -74,18 +73,17 @@ export const getAnalyticsOverview = async (req, res, next) => {
 
     const dailyWork = {};
     const workActiveDatesSet = new Set();
-    // Per-day work minutes: dateStr -> total minutes
     const workMinutes = {};
 
     workSessions.forEach(session => {
       const day = session.startTime.toLocaleDateString('en-US', { weekday: 'short' });
       if (!dailyWork[day]) dailyWork[day] = 0;
-      dailyWork[day] += session.duration / 3600; // hours for chart
+      dailyWork[day] += session.duration / 3600; 
       
       const dateStr = formatLocalDate(session.startTime);
       workActiveDatesSet.add(dateStr);
       if (!workMinutes[dateStr]) workMinutes[dateStr] = 0;
-      workMinutes[dateStr] += Math.floor(session.duration / 60); // convert seconds to minutes
+      workMinutes[dateStr] += Math.floor(session.duration / 60); 
     });
 
     const workData = Object.keys(dailyWork).map(day => ({
@@ -100,8 +98,6 @@ export const getAnalyticsOverview = async (req, res, next) => {
     });
     
     const exerciseActiveDates = exerciseLogs.map(log => formatLocalDate(log.date));
-
-    // Per-day exercise minutes
     const exerciseMinutes = {};
     const dailyExercise = {};
     exerciseLogs.forEach(log => {
@@ -119,9 +115,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
       duration: dailyExercise[day]
     }));
 
-
-
-    // 5. Todo Data (Productivity)
+    // 4. Todo Data (Productivity)
     const allTasks = await TodoTask.find({ userId: req.userId });
     
     const tasksCompletedThisMonth = allTasks.filter(t => {
@@ -132,7 +126,6 @@ export const getAnalyticsOverview = async (req, res, next) => {
 
     const dailyTasks = {};
     const productivityActiveDatesSet = new Set();
-    // Per-day productivity counts
     const productivityCounts = {};
     
     tasksCompletedThisMonth.forEach(task => {
@@ -152,6 +145,56 @@ export const getAnalyticsOverview = async (req, res, next) => {
         completed: dailyTasks[day]
     }));
 
+    // 5. Social Media Data
+    const socialSessions = await SocialMediaSession.find({
+      userId: req.userId,
+      startTime: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+    const dailySocial = {};
+    const socialMinutes = {};
+    const socialActiveDatesSet = new Set();
+    
+    socialSessions.forEach(session => {
+      const day = session.startTime.toLocaleDateString('en-US', { weekday: 'short' });
+      if (!dailySocial[day]) dailySocial[day] = 0;
+      dailySocial[day] += session.duration / 60; // minutes
+      
+      const dateStr = formatLocalDate(session.startTime);
+      socialActiveDatesSet.add(dateStr);
+      if (!socialMinutes[dateStr]) socialMinutes[dateStr] = 0;
+      socialMinutes[dateStr] += Math.floor(session.duration / 60);
+    });
+
+    const socialData = Object.keys(dailySocial).map(day => ({
+      day,
+      minutes: Number(dailySocial[day].toFixed(1))
+    }));
+
+    // 6. Reading Data
+    const readingLogs = await ReadingLog.find({
+      userId: req.userId,
+      date: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+    const dailyReading = {};
+    const readingPages = {};
+    const readingActiveDatesSet = new Set();
+
+    readingLogs.forEach(log => {
+      const day = new Date(log.date).toLocaleDateString('en-US', { weekday: 'short' });
+      if (!dailyReading[day]) dailyReading[day] = 0;
+      dailyReading[day] += log.pagesRead;
+      
+      const dateStr = formatLocalDate(log.date);
+      readingActiveDatesSet.add(dateStr);
+      if (!readingPages[dateStr]) readingPages[dateStr] = 0;
+      readingPages[dateStr] += log.pagesRead;
+    });
+
+    const readingData = Object.keys(dailyReading).map(day => ({
+      day,
+      pages: dailyReading[day]
+    }));
+
     // Monthly Averages
     let elapsedDays = endOfMonth.getDate();
     const now = new Date();
@@ -163,16 +206,18 @@ export const getAnalyticsOverview = async (req, res, next) => {
     
     const namazMonthlyAvg = elapsedDays > 0 ? (namazData.reduce((acc, curr) => acc + curr.prayers, 0) / (elapsedDays * 5)) * 100 : 0;
     const workMonthlyAvg = elapsedDays > 0 ? (workData.reduce((acc, curr) => acc + curr.hours, 0) / elapsedDays) : 0;
-
     const exerciseMonthlyAvg = elapsedDays > 0 ? (exerciseData.reduce((acc, curr) => acc + curr.duration, 0) / elapsedDays) : 0;
     const productivityMonthlyAvg = elapsedDays > 0 ? (productivityData.reduce((acc, curr) => acc + curr.completed, 0) / elapsedDays) : 0;
+    const socialMonthlyAvg = elapsedDays > 0 ? (socialData.reduce((acc, curr) => acc + curr.minutes, 0) / elapsedDays) : 0;
+    const readingMonthlyAvg = elapsedDays > 0 ? (readingData.reduce((acc, curr) => acc + curr.pages, 0) / elapsedDays) : 0;
 
     const monthlyAverages = {
       namaz: Math.round(namazMonthlyAvg),
       work: Number(workMonthlyAvg.toFixed(1)),
-
       exercise: Math.round(exerciseMonthlyAvg),
-      productivity: Number(productivityMonthlyAvg.toFixed(1))
+      productivity: Number(productivityMonthlyAvg.toFixed(1)),
+      social: Math.round(socialMonthlyAvg),
+      reading: Math.round(readingMonthlyAvg)
     };
 
     // Highest Streaks (all-time, across all logs)
@@ -195,8 +240,6 @@ export const getAnalyticsOverview = async (req, res, next) => {
       workBest = Math.max(workBest, workStreakVal);
     }
 
-
-
     const allExercise = await ExerciseLog.find({ userId: req.userId }).sort({ date: 1 });
     const exDates = [...new Set(allExercise.map(l => formatLocalDate(l.date)))];
     let exStreak = 0, exBest = 0;
@@ -209,11 +252,101 @@ export const getAnalyticsOverview = async (req, res, next) => {
       exBest = Math.max(exBest, exStreak);
     }
 
+    const allReading = await ReadingLog.find({ userId: req.userId }).sort({ date: 1 });
+    const readingDatesAll = [...new Set(allReading.map(l => formatLocalDate(l.date)))];
+    let readingStreakVal = 0, readingBest = 0;
+    for (let i = 0; i < readingDatesAll.length; i++) {
+      if (i === 0) { readingStreakVal = 1; }
+      else {
+        const diff = (new Date(readingDatesAll[i]) - new Date(readingDatesAll[i-1])) / 86400000;
+        readingStreakVal = diff === 1 ? readingStreakVal + 1 : 1;
+      }
+      readingBest = Math.max(readingBest, readingStreakVal);
+    }
+
+    // For social best, we find the lowest daily total among active days
+    const allSocial = await SocialMediaSession.find({ userId: req.userId, endTime: { $ne: null } });
+    const allSocialDaily = {};
+    allSocial.forEach(session => {
+      const dateStr = formatLocalDate(session.startTime);
+      if (!allSocialDaily[dateStr]) allSocialDaily[dateStr] = 0;
+      allSocialDaily[dateStr] += session.duration / 60;
+    });
+    const socialDailyVals = Object.values(allSocialDaily);
+    const socialBest = socialDailyVals.length > 0 ? Math.round(Math.min(...socialDailyVals)) : 0;
+
+    const streakLog = await StreakLog.findOne({ userId: req.userId });
+    const streakBest = streakLog ? streakLog.longestStreak : 0;
+
+    const streakActiveDatesSet = new Set();
+    const streakRelapsesSet = new Set();
+    
+    if (streakLog) {
+      const createdAt = new Date(streakLog.createdAt || Date.now());
+      createdAt.setHours(0, 0, 0, 0);
+      const todayDate = new Date();
+      todayDate.setHours(23, 59, 59, 999);
+      
+      for (let d = new Date(createdAt); d <= todayDate; d.setDate(d.getDate() + 1)) {
+        streakActiveDatesSet.add(formatLocalDate(d));
+      }
+      
+      streakLog.relapseHistory.forEach(relapse => {
+         if (relapse.date) {
+           streakRelapsesSet.add(formatLocalDate(relapse.date));
+         }
+      });
+    }
+    
+    // Generate streakData for the charts (streak duration in days)
+    const streakData = [];
+    let relapsesThisMonth = 0;
+    
+    if (streakLog) {
+      const createdAtDate = new Date(streakLog.createdAt || Date.now());
+      createdAtDate.setHours(0,0,0,0);
+      
+      const relapses = streakLog.relapseHistory.map(r => {
+        const d = new Date(r.date);
+        d.setHours(0,0,0,0);
+        return d;
+      }).sort((a,b) => a - b);
+      
+      relapsesThisMonth = relapses.filter(d => d >= startOfMonth && d <= endOfMonth).length;
+
+      for (let i = 1; i <= endOfMonth.getDate(); i++) {
+          let y = year || new Date().getFullYear();
+          let m = month ? month - 1 : new Date().getMonth();
+          const d = new Date(y, m, i);
+          d.setHours(0,0,0,0);
+          
+          const isRelapse = relapses.some(r => r.getTime() === d.getTime());
+          let duration = 0;
+          
+          if (isRelapse) {
+            duration = 0;
+          } else if (d >= createdAtDate && d <= new Date(new Date().setHours(0,0,0,0))) {
+            const lastRelapse = [...relapses].reverse().find(r => r < d);
+            const startDate = lastRelapse ? lastRelapse : createdAtDate;
+            duration = Math.floor((d - startDate) / 86400000);
+          }
+          
+          streakData.push({
+              date: i + (['st', 'nd', 'rd'][((i+90)%100-10)%10-1] || 'th'),
+              days: duration
+          });
+      }
+    }
+
+    monthlyAverages.streak = relapsesThisMonth;
+
     const highestStreaks = {
       namaz: namazBest,
       work: workBest,
-
       exercise: exBest,
+      reading: readingBest,
+      social: socialBest,
+      streak: streakBest
     };
 
     res.json({
@@ -222,23 +355,27 @@ export const getAnalyticsOverview = async (req, res, next) => {
         namazData,
         workData,
         exerciseData,
-
         productivityData,
+        socialData,
+        readingData,
+        streakData,
         monthlyAverages,
         highestStreaks,
-        // Per-habit daily data maps for heatmap coloring
         calendar: {
           namaz: namazActiveDates,
           work: Array.from(workActiveDatesSet),
           exercise: Array.from(new Set(exerciseActiveDates)),
-
           productivity: Array.from(productivityActiveDatesSet),
-          // NEW: per-day counts/minutes for precise heatmap coloring
-          namazCounts,       // { "YYYY-MM-DD": 0-5 }
-          workMinutes,       // { "YYYY-MM-DD": minutes }
-
-          exerciseMinutes,   // { "YYYY-MM-DD": minutes }
-          productivityCounts // { "YYYY-MM-DD": task count }
+          social: Array.from(socialActiveDatesSet),
+          reading: Array.from(readingActiveDatesSet),
+          streak: Array.from(streakActiveDatesSet),
+          namazCounts,
+          workMinutes,
+          exerciseMinutes,
+          productivityCounts,
+          socialMinutes,
+          readingPages,
+          streakRelapses: Array.from(streakRelapsesSet)
         }
       }
     });

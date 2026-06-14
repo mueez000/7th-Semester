@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   gender: { type: String },
   level: { type: Number, default: 1 },
   xp: { type: Number, default: 0 },
+  coins: { type: Number, default: 0 },
   xp_to_next_level: { type: Number, default: 100 }
 }, { timestamps: true });
 

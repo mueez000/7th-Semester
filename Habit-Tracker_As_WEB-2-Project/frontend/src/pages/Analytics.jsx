@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BarChart2, Layers, CheckCircle, Download, Clock, Moon, Activity, Flame } from 'lucide-react';
+import { BarChart2, Layers, CheckCircle, Download, Clock, Moon, Activity, Flame, Smartphone, BookOpen, Shield } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import HabitCalendar from '../components/analytics/HabitCalendar';
@@ -17,6 +17,8 @@ const Analytics = () => {
     workData: [],
     exerciseData: [],
     productivityData: [],
+    socialData: [],
+    readingData: [],
     monthlyAverages: {},
     highestStreaks: {},
     calendar: {
@@ -98,6 +100,9 @@ const Analytics = () => {
                 { icon: <Clock size={15}/>, label: 'Deep Work', value: `${data.monthlyAverages?.work || 0} hrs/day`, color: 'text-blue-600' },
                 { icon: <Activity size={15}/>, label: 'Exercise', value: `${data.monthlyAverages?.exercise || 0} mins/day`, color: 'text-rose-600' },
                 { icon: <CheckCircle size={15}/>, label: 'Tasks', value: `${data.monthlyAverages?.productivity || 0} /day`, color: 'text-amber-600' },
+                { icon: <Smartphone size={15}/>, label: 'Social Media', value: `${data.monthlyAverages?.social || 0} mins/day`, color: 'text-pink-600' },
+                { icon: <BookOpen size={15}/>, label: 'Reading', value: `${data.monthlyAverages?.reading || 0} pgs/day`, color: 'text-[#b45309]' },
+                { icon: <Shield size={15}/>, label: 'Commitment', value: `${data.monthlyAverages?.streak || 0} relapses`, color: 'text-purple-600' },
               ].map(row => (
                 <div key={row.label} className="flex justify-between items-center py-1.5 border-b border-[#e8f0fe] last:border-0">
                   <span className={`font-medium flex items-center gap-2 text-[#3c4043] ${row.color}`}>{row.icon} {row.label}</span>
@@ -117,11 +122,14 @@ const Analytics = () => {
                 { label: 'Namaz', value: data.highestStreaks?.namaz || 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
                 { label: 'Deep Work', value: data.highestStreaks?.work || 0, color: 'bg-blue-50 text-blue-700 border-blue-200' },
                 { label: 'Exercise', value: data.highestStreaks?.exercise || 0, color: 'bg-rose-50 text-rose-700 border-rose-200' },
+                { label: 'Reading', value: data.highestStreaks?.reading || 0, color: 'bg-amber-50 text-[#b45309] border-amber-200' },
+                { label: 'Commitment', value: data.highestStreaks?.streak || 0, color: 'bg-purple-50 text-[#6b21a8] border-purple-200', icon: <Shield size={14} className="inline mr-1"/> },
+                { label: 'Social Media', value: `${data.highestStreaks?.social || 0}m`, color: 'bg-pink-50 text-pink-700 border-pink-200' },
               ].map(item => (
                 <div key={item.label} className={`rounded-2xl border p-3 text-center ${item.color}`}>
                   <p className="text-2xl font-bold">{item.value}</p>
-                  <p className="text-xs font-semibold mt-0.5 opacity-80">{item.label}</p>
-                  <p className="text-xs opacity-60">days</p>
+                  <p className="text-xs font-semibold mt-0.5 opacity-80">{item.icon}{item.label}</p>
+                  <p className="text-xs opacity-60">{item.label === 'Social Media' ? 'best session' : 'days'}</p>
                 </div>
               ))}
             </div>
@@ -177,6 +185,48 @@ const Analytics = () => {
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
                         <Tooltip cursor={{ fill: '#f8f9fa' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                         <Bar dataKey="duration" fill="#e37400" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+
+                <ChartCard title="Social Media Time" icon={<Smartphone size={20}/>} color="#E4405F">
+                  {!data.socialData || data.socialData.length === 0 ? <EmptyState msg="No social media logged" /> : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.socialData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f3f4" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
+                        <Tooltip cursor={{ fill: '#f8f9fa' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="minutes" fill="#E4405F" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+
+                <ChartCard title="Pages Read" icon={<BookOpen size={20}/>} color="#b45309">
+                  {!data.readingData || data.readingData.length === 0 ? <EmptyState msg="No reading logged" /> : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.readingData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f3f4" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
+                        <Tooltip cursor={{ fill: '#f8f9fa' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="pages" fill="#b45309" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+
+                <ChartCard title="Commitment Streak" icon={<Shield size={20}/>} color="#a855f7">
+                  {!data.streakData || data.streakData.length === 0 ? <EmptyState msg="No streak data logged" /> : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.streakData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f3f4" />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#5f6368' }} />
+                        <Tooltip cursor={{ fill: '#f8f9fa' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="days" fill="#a855f7" radius={[4, 4, 0, 0]} maxBarSize={30} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}

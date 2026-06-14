@@ -1,5 +1,6 @@
 import ExerciseLog from '../models/ExerciseLog.js';
 import { awardXP } from '../services/gamification.js';
+import { progressQuest } from '../services/questService.js';
 
 export const logExercise = async (req, res, next) => {
   try {
@@ -26,6 +27,7 @@ export const logExercise = async (req, res, next) => {
 
     const xpAmount = Math.max(20, (duration || 0) * 2);
     await awardXP(req.userId, xpAmount, 'exercise', log._id);
+    await progressQuest(req.userId, 'exercise', finalCalories);
 
     res.status(201).json({ success: true, data: log });
   } catch (error) {

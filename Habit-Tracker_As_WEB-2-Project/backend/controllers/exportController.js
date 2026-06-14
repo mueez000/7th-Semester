@@ -4,6 +4,8 @@ import ExerciseLog from '../models/ExerciseLog.js';
 
 import TodoTask from '../models/TodoTask.js';
 import User from '../models/User.js';
+import SocialMediaSession from '../models/SocialMediaSession.js';
+import ReadingLog from '../models/ReadingLog.js';
 
 export const getAllUserData = async (req, res, next) => {
   try {
@@ -25,15 +27,22 @@ export const getAllUserData = async (req, res, next) => {
     // 5. Todo Tasks
     const todoTasks = await TodoTask.find({ userId });
 
+    // 6. Social Media
+    const socialMediaSessions = await SocialMediaSession.find({ userId });
+    
+    // 7. Reading Logs
+    const readingLogs = await ReadingLog.find({ userId });
+
     res.json({
       success: true,
       data: {
         user,
         namazLogs,
         workSessions,
-
         exerciseLogs,
-        todoTasks
+        todoTasks,
+        socialMediaSessions,
+        readingLogs
       }
     });
 

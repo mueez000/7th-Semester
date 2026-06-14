@@ -7,13 +7,20 @@ export const useTimer = () => useContext(TimerContext);
 export const TimerProvider = ({ children }) => {
   const [timers, setTimers] = useState(() => {
     const saved = localStorage.getItem('habitflow_timers') || sessionStorage.getItem('habitflow_timers');
-    return saved ? JSON.parse(saved) : {
-      work: { isRunning: false, startTime: null, elapsed: 0, activeTask: null }
+    const defaultState = {
+      work: { isRunning: false, startTime: null, elapsed: 0, activeTask: null },
+      social: { isRunning: false, startTime: null, elapsed: 0, platform: null }
     };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return { ...defaultState, ...parsed };
+    }
+    return defaultState;
   });
 
   const timerRefs = useRef({
-    work: null
+    work: null,
+    social: null
   });
 
   useEffect(() => {
@@ -33,7 +40,7 @@ export const TimerProvider = ({ children }) => {
 
   const updateElapsed = (type) => {
     setTimers(prev => {
-      if (!prev[type].isRunning || !prev[type].startTime) return prev;
+      if (!prev[type] || !prev[type].isRunning || !prev[type].startTime) return prev;
       const now = Date.now();
       const elapsed = Math.floor((now - prev[type].startTime) / 1000);
       return {
@@ -47,31 +54,31 @@ export const TimerProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    ['work'].forEach(type => {
-      if (timers[type].isRunning && !timerRefs.current[type]) {
+    ['work', 'social'].forEach(type => {
+      if (timers[type]?.isRunning && !timerRefs.current[type]) {
         updateElapsed(type);
         timerRefs.current[type] = setInterval(() => {
           updateElapsed(type);
         }, 1000);
-      } else if (!timers[type].isRunning && timerRefs.current[type]) {
+      } else if (!timers[type]?.isRunning && timerRefs.current[type]) {
         clearInterval(timerRefs.current[type]);
         timerRefs.current[type] = null;
       }
     });
 
     return () => {
-      ['work'].forEach(type => {
-        if (!timers[type].isRunning && timerRefs.current[type]) {
+      ['work', 'social'].forEach(type => {
+        if (!timers[type]?.isRunning && timerRefs.current[type]) {
            // Cleanup is handled by the clear condition above usually, but on unmount we want to clear all
         }
       });
     };
-  }, [timers.work.isRunning]);
+  }, [timers.work?.isRunning, timers.social?.isRunning]);
 
   // Handle unmount completely
   useEffect(() => {
     return () => {
-      ['work'].forEach(type => {
+      ['work', 'social'].forEach(type => {
         if (timerRefs.current[type]) {
           clearInterval(timerRefs.current[type]);
           timerRefs.current[type] = null;

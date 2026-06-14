@@ -9,13 +9,19 @@ import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import namazRoutes from './routes/namaz.js';
-import workRoutes from './routes/work.js';
+import streakRoutes from './routes/streak.js';
+import rewardRoutes from './routes/rewardRoutes.js';
+import questRoutes from './routes/questRoutes.js';
 import exerciseRoutes from './routes/exercise.js';
+import workRoutes from './routes/work.js';
 
 import analyticsRoutes from './routes/analytics.js';
 import todoRoutes from './routes/todo.js';
 import exportRoutes from './routes/export.js';
 import gamificationRoutes from './routes/gamification.js';
+
+import socialMediaRoutes from './routes/socialMedia.js';
+import readingRoutes from './routes/reading.js';
 
 import path from 'path';
 
@@ -73,7 +79,6 @@ app.get('/api/health', (req, res) => {
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/namaz', namazRoutes);
 app.use('/api/work', workRoutes);
 app.use('/api/exercise', exerciseRoutes);
 
@@ -81,6 +86,14 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/todo', todoRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/gamification', gamificationRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/namaz', namazRoutes);
+app.use('/api/streak', streakRoutes);
+app.use('/api/rewards', rewardRoutes);
+app.use('/api/quests', questRoutes);
+
+app.use('/api/social', socialMediaRoutes);
+app.use('/api/reading', readingRoutes);
 
 app.get('/api/test-users', async (req, res) => {
   try {

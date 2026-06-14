@@ -2,9 +2,18 @@ import User from '../models/User.js';
 import Badge from '../models/Badge.js';
 import XpHistory from '../models/XpHistory.js';
 
+const getRPGTitle = (level) => {
+  if (level < 5) return 'Novice';
+  if (level < 10) return 'Apprentice';
+  if (level < 25) return 'Disciplined';
+  if (level < 50) return 'Adept';
+  if (level < 100) return 'Master';
+  return 'Grandmaster';
+};
+
 export const getMyGamification = async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId).select('level xp xp_to_next_level');
+    const user = await User.findById(req.userId).select('level xp coins xp_to_next_level');
     
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
@@ -15,7 +24,9 @@ export const getMyGamification = async (req, res, next) => {
       success: true,
       data: {
         level: user.level,
+        title: getRPGTitle(user.level),
         xp: user.xp,
+        coins: user.coins !== undefined ? user.coins : user.xp,
         xp_to_next_level: user.xp_to_next_level,
         badges,
         recentHistory

@@ -5,6 +5,8 @@ import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
 
 import TodoTask from '../models/TodoTask.js';
+import SocialMediaSession from '../models/SocialMediaSession.js';
+import ReadingLog from '../models/ReadingLog.js';
 
 export const calculateNextLevelXP = (level) => {
   return 100 * Math.pow(level, 2);
@@ -14,8 +16,12 @@ export const awardXP = async (userId, amount, source, sourceId = null) => {
   const user = await User.findById(userId);
   if (!user) return null;
 
-  let { level, xp, xp_to_next_level } = user;
+  let { level, xp, xp_to_next_level, coins } = user;
   xp += amount;
+  
+  if (coins === undefined) coins = xp; // For old users, initialize coins to current xp
+  coins += amount;
+  if (coins < 0) coins = 0;
 
   const levelUps = [];
 
@@ -37,6 +43,7 @@ export const awardXP = async (userId, amount, source, sourceId = null) => {
 
   user.level = level;
   user.xp = xp;
+  user.coins = coins;
   user.xp_to_next_level = xp_to_next_level;
   await user.save();
 
@@ -95,6 +102,24 @@ const checkAndAwardBadges = async (userId, userLevel, lastSource) => {
     const completedTasks = await TodoTask.countDocuments({ userId, status: 'completed' });
     if (completedTasks >= 10) await awardBadge('Task Smasher', 'Completed your first 10 tasks.', '✅');
     if (completedTasks >= 50) await awardBadge('Getting Things Done', '50 tasks completed! Your efficiency is off the charts.', '🚀');
+  }
+
+  if (lastSource === 'social') {
+    const socialSessions = await SocialMediaSession.find({ userId });
+    const distinctDays = new Set(socialSessions.map(s => s.startTime.toISOString().split('T')[0])).size;
+    if (distinctDays >= 7) await awardBadge('Mindful Scroller', 'Logged 7 days of conscious social media usage.', '📱');
+    if (socialSessions.length >= 1) await awardBadge('Digital Detox', 'Taking control of your screen time.', '🛑');
+  }
+
+  if (lastSource === 'reading') {
+    const readingLogs = await ReadingLog.find({ userId });
+    
+    const totalPages = readingLogs.reduce((acc, log) => acc + log.pagesRead, 0);
+    if (totalPages >= 1000) await awardBadge('Bookworm', 'Read 1000 pages total.', '📚');
+
+    const distinctDays = new Set(readingLogs.map(s => new Date(s.date).toISOString().split('T')[0])).size;
+    if (distinctDays >= 7) await awardBadge('Daily Reader', 'Read for 7 distinct days.', '📖');
+    if (distinctDays >= 30) await awardBadge('Scholar', 'Read for 30 distinct days.', '🎓');
   }
 
   return earnedBadges;

@@ -13,9 +13,14 @@ import Dashboard from './pages/Dashboard';
 import NamazTracker from './pages/NamazTracker';
 import WorkTimer from './pages/WorkTimer';
 import ExerciseTracker from './pages/ExerciseTracker';
+import SocialMediaTracker from './pages/SocialMediaTracker';
+import StreakTracker from './pages/StreakTracker';
+import ReadingTracker from './pages/ReadingTracker';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
+import Shop from './pages/Shop';
+import Quests from './pages/Quests';
 import TodoPage from './pages/TodoPage';
 import NotFound from './pages/NotFound';
 import PageTransition from './components/common/PageTransition';
@@ -44,9 +49,13 @@ const AnimatedRoutes = () => {
 
           <Route path="namaz" element={<PageTransition><NamazTracker /></PageTransition>} />
           <Route path="work" element={<PageTransition><WorkTimer /></PageTransition>} />
-
           <Route path="exercise" element={<PageTransition><ExerciseTracker /></PageTransition>} />
+          <Route path="social" element={<PageTransition><SocialMediaTracker /></PageTransition>} />
+          <Route path="streak" element={<PageTransition><StreakTracker /></PageTransition>} />
+          <Route path="reading" element={<PageTransition><ReadingTracker /></PageTransition>} />
           <Route path="analytics" element={<PageTransition><Analytics /></PageTransition>} />
+          <Route path="shop" element={<PageTransition><Shop /></PageTransition>} />
+          <Route path="quests" element={<PageTransition><Quests /></PageTransition>} />
           <Route path="notifications" element={<PageTransition><Notifications /></PageTransition>} />
           <Route path="profile" element={<PageTransition><Profile /></PageTransition>} />
         </Route>

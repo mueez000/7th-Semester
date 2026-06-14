@@ -1,5 +1,6 @@
 import NamazLog from '../models/NamazLog.js';
 import { awardXP } from '../services/gamification.js';
+import { progressQuest } from '../services/questService.js';
 
 export const getTodayNamaz = async (req, res, next) => {
   try {
@@ -40,11 +41,15 @@ export const logNamaz = async (req, res, next) => {
     );
     
     if (completed && !wasCompleted) {
-      await awardXP(req.userId, 10, 'namaz', prayer);
+      await awardXP(req.userId, 20, 'namaz', prayer);
     } else if (!completed && wasCompleted) {
-      await awardXP(req.userId, -10, 'namaz_undo', prayer);
+      await awardXP(req.userId, -20, 'namaz_undo', prayer);
     }
     
+    if (completed) {
+      await progressQuest(req.userId, 'namaz', 1);
+    }
+
     res.json({ success: true, data: log });
   } catch (error) {
     next(error);
