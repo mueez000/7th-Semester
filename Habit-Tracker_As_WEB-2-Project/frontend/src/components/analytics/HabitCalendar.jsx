@@ -158,8 +158,44 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     streak: ['No tracking', 'Active', 'Relapsed']
   };
 
+  const getCellText = (dateStr) => {
+    if (activeHabit === 'namaz') {
+      const c = calendarData?.namazCounts?.[dateStr];
+      return c !== undefined && c !== null ? `${c} pray` : null;
+    }
+    if (activeHabit === 'work') {
+      const m = calendarData?.workMinutes?.[dateStr];
+      if (m === undefined || m === null) return null;
+      const hrs = Math.floor(m / 60);
+      const mins = m % 60;
+      return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+    }
+    if (activeHabit === 'exercise') {
+      const m = calendarData?.exerciseMinutes?.[dateStr];
+      return m !== undefined && m !== null ? `${m}m` : null;
+    }
+    if (activeHabit === 'productivity') {
+      const c = calendarData?.productivityCounts?.[dateStr];
+      return c !== undefined && c !== null ? `${c} task` : null;
+    }
+    if (activeHabit === 'social') {
+      const m = calendarData?.socialMinutes?.[dateStr];
+      return m !== undefined && m !== null ? `${m}m` : null;
+    }
+    if (activeHabit === 'reading') {
+      const p = calendarData?.readingPages?.[dateStr];
+      return p !== undefined && p !== null ? `${p} pg` : null;
+    }
+    if (activeHabit === 'streak') {
+      if (calendarData?.streakRelapses?.includes(dateStr)) return 'Relapsed';
+      if (calendarData?.streak?.includes(dateStr)) return 'Active';
+      return null;
+    }
+    return null;
+  };
+
   return (
-    <div className="google-card p-6">
+    <div className="google-card p-6 w-full">
       <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h2 className="text-xl font-bold text-[#202124]">{format(selectedMonth, 'MMMM yyyy')}</h2>
@@ -169,12 +205,12 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
                onChange={e => setActiveHabit(e.target.value)}
                className="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-semibold text-[#5f6368] hover:border-gray-300 focus:outline-none focus:border-[#1a73e8] transition"
              >
-               <option value="namaz">Namaz Heatmap</option>
-               <option value="work">Deep Work Heatmap</option>
-               <option value="exercise">Exercise Heatmap</option>
-               <option value="productivity">Tasks Heatmap</option>
-               <option value="social">Social Media Heatmap</option>
-               <option value="reading">Reading Heatmap</option>
+               <option value="namaz">Namaz Data</option>
+               <option value="work">Deep Work Data</option>
+               <option value="exercise">Exercise Data</option>
+               <option value="productivity">Tasks Data</option>
+               <option value="social">Social Media Data</option>
+               <option value="reading">Reading Data</option>
                <option value="streak">Commitment Streak</option>
              </select>
           </div>
@@ -206,59 +242,31 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
         
         {/* Padding for start of month */}
         {Array.from({ length: startDayOfWeek }).map((_, i) => (
-          <div key={`pad-${i}`} className="h-10 sm:h-14 md:h-20 bg-transparent rounded-lg"></div>
+          <div key={`pad-${i}`} className="h-16 sm:h-20 md:h-24 bg-transparent rounded-lg"></div>
         ))}
 
         {daysInMonth.map(date => {
           const dateStr = getLocalDateStr(date);
           const isFutureDate = isFuture(date);
           const { className: colorClass, style: colorStyle } = getCellStyle(dateStr, isFutureDate);
-          const hasData = !isFutureDate && hasAnyData(dateStr);
+          const cellText = !isFutureDate ? getCellText(dateStr) : null;
           
           return (
             <div 
               key={dateStr}
               onClick={() => { if (!isFutureDate) setSelectedDateStr(dateStr) }}
               style={colorStyle}
-              className={`h-10 sm:h-14 md:h-20 rounded-xl border flex flex-col justify-between p-1 sm:p-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95 ${isFutureDate ? 'opacity-30 cursor-not-allowed bg-gray-50 border-gray-100 border-dashed' : colorClass}`}
+              className={`h-16 sm:h-20 md:h-24 rounded-xl border flex flex-col justify-start p-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95 ${isFutureDate ? 'opacity-30 cursor-not-allowed bg-gray-50 border-gray-100 border-dashed' : colorClass}`}
             >
                <span className="text-sm font-semibold opacity-80">{format(date, 'd')}</span>
-               {hasData && (
-                 <div className="w-full h-1 sm:h-2 rounded-full bg-black/10 mt-auto overflow-hidden">
-                   <div className="h-full bg-black/20 w-full"></div>
-                 </div>
+               {cellText && (
+                 <span className="mt-auto text-[11px] sm:text-xs font-bold text-gray-800 bg-white/40 px-1 py-0.5 rounded backdrop-blur-sm truncate text-center">
+                   {cellText}
+                 </span>
                )}
             </div>
           );
         })}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-6 flex flex-wrap justify-between text-xs text-[#5f6368] font-medium border-t border-[#dadce0] pt-4">
-        {activeHabit === 'streak' ? (
-          <>
-            <span>Legend</span>
-            <div className="flex space-x-1">
-              <div className="w-4 h-4 rounded bg-white border border-[#dadce0]" title="No tracking"></div>
-              <div className="w-4 h-4 rounded border border-purple-500" style={{ backgroundColor: '#d8b4fe' }} title="Active Streak"></div>
-              <div className="w-4 h-4 rounded border border-red-500" style={{ backgroundColor: '#ef5350' }} title="Relapsed"></div>
-            </div>
-            <span></span>
-          </>
-        ) : (
-          <>
-            <span>Less Consistent</span>
-            <div className="flex space-x-1">
-              <div className="w-4 h-4 rounded bg-white border border-[#dadce0]" title="No data"></div>
-              <div className="w-4 h-4 rounded border border-red-300" style={{ backgroundColor: '#ffcdd2' }} title="0 / Missed"></div>
-              <div className="w-4 h-4 rounded border border-yellow-300" style={{ backgroundColor: '#fff9c4' }}></div>
-              <div className="w-4 h-4 rounded border border-orange-300" style={{ backgroundColor: '#ffe0b2' }}></div>
-              <div className="w-4 h-4 rounded border border-green-300" style={{ backgroundColor: '#c8e6c9' }}></div>
-              <div className="w-4 h-4 rounded border border-green-500" style={{ backgroundColor: '#a5d6a7' }}></div>
-            </div>
-            <span>More Consistent</span>
-          </>
-        )}
       </div>
 
       {/* Detail Modal overlay */}

@@ -1,6 +1,7 @@
 import StreakLog from '../models/StreakLog.js';
 import { awardXP } from '../services/gamification.js';
 import { progressQuest } from '../services/questService.js';
+import User from '../models/User.js';
 
 export const startStreak = async (req, res, next) => {
   try {
@@ -17,12 +18,14 @@ export const startStreak = async (req, res, next) => {
         isActive: true,
         currentStreak: 0,
         longestStreak: 0,
+        shieldsEarned: 0,
         relapseHistory: []
       });
     } else {
       streak.startTime = new Date();
       streak.isActive = true;
       streak.currentStreak = 0;
+      streak.shieldsEarned = 0;
       await streak.save();
     }
 
@@ -51,6 +54,19 @@ export const getStreakStatus = async (req, res, next) => {
         await progressQuest(req.userId, 'streak', durationDays, true);
       }
 
+      const shieldsToEarn = Math.floor(durationDays / 90);
+      if (shieldsToEarn > (streak.shieldsEarned || 0)) {
+        const newShields = shieldsToEarn - (streak.shieldsEarned || 0);
+        streak.shieldsEarned = shieldsToEarn;
+        
+        const user = await User.findById(req.userId);
+        if (user) {
+          user.shields = (user.shields || 0) + newShields;
+          await user.save();
+          await awardXP(req.userId, newShields * 50, 'shield_earned', streak._id);
+        }
+      }
+
       streak.currentStreak = durationDays;
       if (durationDays > streak.longestStreak) {
         streak.longestStreak = durationDays;
@@ -67,7 +83,7 @@ export const getStreakStatus = async (req, res, next) => {
 
 export const relapse = async (req, res, next) => {
   try {
-    const { withPorn, notes } = req.body;
+    const { withPorn, notes, bathTaken } = req.body;
     
     const streak = await StreakLog.findOne({ userId: req.userId });
     if (!streak || !streak.isActive) {
@@ -82,23 +98,39 @@ export const relapse = async (req, res, next) => {
       streak.longestStreak = durationDays;
     }
 
-    const xpMultiplier = withPorn ? 10 : 25;
-    const earnedXp = durationDays * xpMultiplier;
+    let earnedXp = 0;
+    let usedShield = false;
+    const user = await User.findById(req.userId);
+
+    if (user && user.shields > 0) {
+      user.shields -= 1;
+      await user.save();
+      usedShield = true;
+      earnedXp = 0; // Shield protects from penalty
+    } else {
+      if (withPorn || bathTaken === false) {
+        earnedXp = -500; // Heavy penalty
+      } else {
+        earnedXp = durationDays * 25; // XP only if without porn AND bath taken
+      }
+    }
 
     streak.relapseHistory.push({
       date: now,
-      withPorn: withPorn || false,
-      notes: notes || '',
+      withPorn: Boolean(withPorn),
+      bathTaken: Boolean(bathTaken),
+      notes: (notes || '') + (usedShield ? ' [Shield Used]' : ''),
       xpEarned: earnedXp
     });
 
     streak.startTime = now;
     streak.currentStreak = 0;
+    streak.shieldsEarned = 0;
     streak.lastCheckIn = now;
     
     await streak.save();
 
-    if (earnedXp > 0) {
+    if (earnedXp !== 0) {
       await awardXP(req.userId, earnedXp, 'streak_relapse', streak._id);
     }
 

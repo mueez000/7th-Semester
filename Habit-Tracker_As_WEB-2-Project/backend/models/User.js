@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   level: { type: Number, default: 1 },
   xp: { type: Number, default: 0 },
   coins: { type: Number, default: 0 },
+  shields: { type: Number, default: 0 },
   xp_to_next_level: { type: Number, default: 100 }
 }, { timestamps: true });
 

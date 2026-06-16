@@ -12,5 +12,7 @@ const namazLogSchema = new mongoose.Schema({
   isha: { type: Boolean, default: false }
 });
 
+namazLogSchema.index({ userId: 1, date: -1 });
+
 const NamazLog = mongoose.model('NamazLog', namazLogSchema);
 export default NamazLog;

@@ -74,6 +74,24 @@ export const getExerciseLogs = async (req, res, next) => {
   }
 };
 
+export const getTodayExerciseLogs = async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const logs = await ExerciseLog.find({
+      userId: req.userId,
+      date: { $gte: today, $lt: tomorrow }
+    }).sort({ date: -1 });
+
+    res.json({ success: true, data: logs });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getExerciseStats = async (req, res, next) => {
   try {
     const now = new Date();

@@ -15,6 +15,7 @@ const StreakTracker = () => {
   
   const [showRelapseModal, setShowRelapseModal] = useState(false);
   const [relapseNotes, setRelapseNotes] = useState('');
+  const [bathTaken, setBathTaken] = useState(false);
 
   useEffect(() => {
     fetchStreakData();
@@ -88,7 +89,7 @@ const StreakTracker = () => {
 
   const handleRelapse = async (withPorn) => {
     try {
-      const res = await api.post('/streak/relapse', { withPorn, notes: relapseNotes });
+      const res = await api.post('/streak/relapse', { withPorn, notes: relapseNotes, bathTaken });
       if (res.data.success) {
         setStreakData(res.data.data);
         fetchStreakData(); // refresh history
@@ -96,6 +97,7 @@ const StreakTracker = () => {
         toast('Streak reset. Don\'t give up!', { icon: '🔄' });
         setShowRelapseModal(false);
         setRelapseNotes('');
+        setBathTaken(false);
       }
     } catch (error) {
       toast.error('Failed to record relapse');
@@ -203,8 +205,15 @@ const StreakTracker = () => {
                     </div>
                     <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex-1">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-bold text-gray-800">
-                          Relapse {entry.withPorn ? <span className="text-red-500 text-xs ml-1 px-2 py-0.5 bg-red-50 rounded-full uppercase">With Porn</span> : <span className="text-amber-500 text-xs ml-1 px-2 py-0.5 bg-amber-50 rounded-full uppercase">Without Porn</span>}
+                        <span className="font-bold text-gray-800 flex flex-wrap items-center gap-1">
+                          Relapse 
+                          {entry.withPorn ? <span className="text-red-500 text-xs px-2 py-0.5 bg-red-50 rounded-full uppercase">With Porn</span> : <span className="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 rounded-full uppercase">Without Porn</span>}
+                          {entry.bathTaken !== undefined && (
+                            entry.bathTaken ? <span className="text-blue-500 text-xs px-2 py-0.5 bg-blue-50 rounded-full uppercase">Bath Taken</span> : <span className="text-gray-500 text-xs px-2 py-0.5 bg-gray-100 rounded-full uppercase">No Bath</span>
+                          )}
+                          {entry.xpEarned !== undefined && (
+                            entry.xpEarned < 0 ? <span className="text-red-600 text-xs font-bold">({entry.xpEarned} XP)</span> : <span className="text-green-600 text-xs font-bold">(+{entry.xpEarned} XP)</span>
+                          )}
                         </span>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-gray-500 font-medium">
@@ -265,8 +274,21 @@ const StreakTracker = () => {
                 value={relapseNotes}
                 onChange={(e) => setRelapseNotes(e.target.value)}
                 placeholder="What triggered this? How are you feeling?"
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] text-sm mb-6 resize-none"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] text-sm mb-4 resize-none"
               ></textarea>
+              
+              <div className="flex items-center gap-3 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <input 
+                  type="checkbox" 
+                  id="bathTaken"
+                  checked={bathTaken}
+                  onChange={(e) => setBathTaken(e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="bathTaken" className="font-semibold text-gray-700 select-none cursor-pointer">
+                  I have taken a bath
+                </label>
+              </div>
               
               <div className="space-y-3">
                 <button 

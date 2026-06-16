@@ -9,7 +9,8 @@ import SocialMediaSession from '../models/SocialMediaSession.js';
 import ReadingLog from '../models/ReadingLog.js';
 
 export const calculateNextLevelXP = (level) => {
-  return 100 * Math.pow(level, 2);
+  const absLevel = Math.abs(level);
+  return 100 * Math.pow(absLevel === 0 ? 1 : absLevel, 2);
 };
 
 export const awardXP = async (userId, amount, source, sourceId = null) => {
@@ -33,12 +34,11 @@ export const awardXP = async (userId, amount, source, sourceId = null) => {
       levelUps.push(level);
     }
   } else if (amount < 0) {
-    while (xp < 0 && level > 1) {
+    while (xp < 0) {
       level -= 1;
       xp_to_next_level = calculateNextLevelXP(level);
       xp += xp_to_next_level;
     }
-    if (xp < 0) xp = 0; // Floor at 0 for level 1
   }
 
   user.level = level;

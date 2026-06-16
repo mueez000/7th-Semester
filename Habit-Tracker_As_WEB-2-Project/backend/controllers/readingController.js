@@ -32,17 +32,27 @@ export const logReading = async (req, res, next) => {
     });
 
     const totalPagesToday = todayLogs.reduce((acc, log) => acc + log.pagesRead, 0);
+    const totalDurationToday = todayLogs.reduce((acc, log) => acc + (log.duration || 0), 0);
+    
     const previousPagesToday = totalPagesToday - pagesRead;
+    const previousDurationToday = totalDurationToday - (duration || 0);
 
     // 2 XP per page, max 100 XP per day (which means max 50 pages count towards XP)
+    // 1 XP per minute, max 120 XP per day (max 120 mins)
     const MAX_PAGES_FOR_XP = 50;
+    const MAX_DURATION_FOR_XP = 120;
     
     let pagesToReward = 0;
     if (previousPagesToday < MAX_PAGES_FOR_XP) {
       pagesToReward = Math.min(pagesRead, MAX_PAGES_FOR_XP - previousPagesToday);
     }
 
-    const xpAmount = pagesToReward * 2;
+    let durationToReward = 0;
+    if (duration && previousDurationToday < MAX_DURATION_FOR_XP) {
+      durationToReward = Math.min(duration, MAX_DURATION_FOR_XP - previousDurationToday);
+    }
+
+    const xpAmount = (pagesToReward * 2) + durationToReward;
 
     if (xpAmount > 0) {
       await awardXP(req.userId, xpAmount, 'reading', readingLog._id);
@@ -72,6 +82,24 @@ export const getReadingLogs = async (req, res, next) => {
     }
 
     const logs = await ReadingLog.find(query).sort({ date: -1 });
+
+    res.json({ success: true, data: logs });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTodayReadingLogs = async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const logs = await ReadingLog.find({
+      userId: req.userId,
+      date: { $gte: today, $lt: tomorrow }
+    }).sort({ date: -1 });
 
     res.json({ success: true, data: logs });
   } catch (error) {

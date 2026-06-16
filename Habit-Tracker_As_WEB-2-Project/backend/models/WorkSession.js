@@ -10,5 +10,7 @@ const workSessionSchema = new mongoose.Schema({
   taskId: { type: String, ref: 'TodoTask' }
 });
 
+workSessionSchema.index({ userId: 1, startTime: -1 });
+
 const WorkSession = mongoose.model('WorkSession', workSessionSchema);
 export default WorkSession;

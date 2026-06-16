@@ -2,7 +2,7 @@ import express from 'express';
 import { check } from 'express-validator';
 import { requireAuth } from '../middleware/auth.js';
 import { handleValidationErrors } from '../middleware/validation.js';
-import { logExercise, getExerciseLogs, getExerciseStats, deleteExerciseLog } from '../controllers/exerciseController.js';
+import { logExercise, getExerciseLogs, getExerciseStats, deleteExerciseLog, getTodayExerciseLogs } from '../controllers/exerciseController.js';
 
 const router = express.Router();
 
@@ -14,6 +14,7 @@ router.post('/log', [
   handleValidationErrors
 ], logExercise);
 
+router.get('/today', getTodayExerciseLogs);
 router.get('/logs', getExerciseLogs);
 router.delete('/log/:id', deleteExerciseLog);
 router.get('/stats', getExerciseStats);

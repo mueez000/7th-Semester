@@ -118,18 +118,22 @@ const Profile = () => {
               <h3 className="text-2xl font-bold text-white drop-shadow-sm">{user?.name || 'User'}</h3>
               <p className="text-white/80 text-sm mt-1">Level {gamification.level} {gamification.title || 'Pioneer'}</p>
               
-              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/20 pt-6 text-white text-center">
+              <div className="mt-8 grid grid-cols-4 gap-2 border-t border-white/20 pt-6 text-white text-center">
                 <div>
                   <p className="text-[10px] text-white/70 uppercase tracking-widest font-bold">Total XP</p>
-                  <p className="text-2xl font-extrabold">{gamification.xp.toLocaleString()}</p>
+                  <p className="text-xl font-extrabold">{gamification.xp.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-yellow-300 uppercase tracking-widest font-bold">Coins</p>
-                  <p className="text-2xl text-yellow-300 font-extrabold">{gamification.coins?.toLocaleString() || gamification.xp.toLocaleString()}</p>
+                  <p className="text-xl text-yellow-300 font-extrabold">{gamification.coins?.toLocaleString() || gamification.xp.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-green-300 uppercase tracking-widest font-bold">Shields</p>
+                  <p className="text-xl text-green-300 font-extrabold">{user?.shields || 0}</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-white/70 uppercase tracking-widest font-bold">To Next Lvl</p>
-                  <p className="text-2xl font-extrabold">{gamification.xp_to_next_level - gamification.xp}</p>
+                  <p className="text-xl font-extrabold">{gamification.xp_to_next_level - gamification.xp}</p>
                 </div>
               </div>
             </div>

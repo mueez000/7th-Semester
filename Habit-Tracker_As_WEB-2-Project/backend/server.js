@@ -56,7 +56,20 @@ app.use(cors({
   },
   credentials: true
 }));
+import rateLimit from 'express-rate-limit';
+
+// Global API Limiter (e.g. 500 requests per 15 minutes)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 500,
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(express.json());
+// Apply to all /api routes
+app.use('/api/', apiLimiter);
 
 // Serve frontend in production
 const __dirname = path.resolve();

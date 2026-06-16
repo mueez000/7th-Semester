@@ -18,21 +18,19 @@ const Dashboard = () => {
     readingPages: 0
   });
   const [todayTasks, setTodayTasks] = useState([]);
-  const [activeQuests, setActiveQuests] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboardSummary = async () => {
       try {
-        const [namazRes, workRes, exerciseRes, tasksRes, socialRes, streakRes, readingRes, questsRes] = await Promise.all([
+        const [namazRes, workRes, exerciseRes, tasksRes, socialRes, streakRes, readingRes] = await Promise.all([
           api.get('/namaz/today'),
           api.get('/work/today'),
-          api.get('/exercise/logs'),
+          api.get('/exercise/today'),
           api.get(`/todo/tasks?dueDate=${new Date().toISOString().split('T')[0]}`),
           api.get('/social/today'),
           api.get('/streak/status'),
-          api.get('/reading'),
-          api.get('/quests')
+          api.get('/reading/today')
         ]);
 
         let computedNamaz = 0;
@@ -58,9 +56,7 @@ const Dashboard = () => {
 
 
         if (exerciseRes.data.success && exerciseRes.data.data) {
-           const todayStr = new Date().toISOString().split('T')[0];
-           const todayLogs = exerciseRes.data.data.filter(log => log.date.startsWith(todayStr));
-           computedExercise = todayLogs.reduce((acc, curr) => acc + (curr.calories || 0), 0);
+           computedExercise = exerciseRes.data.data.reduce((acc, curr) => acc + (curr.calories || 0), 0);
         }
 
         if (tasksRes.data.success) {
@@ -77,13 +73,7 @@ const Dashboard = () => {
         }
 
         if (readingRes.data.success && readingRes.data.data) {
-           const todayStart = new Date().setHours(0,0,0,0);
-           const todayLogs = readingRes.data.data.filter(log => new Date(log.date).setHours(0,0,0,0) === todayStart);
-           computedReading = todayLogs.reduce((acc, log) => acc + log.pagesRead, 0);
-        }
-
-        if (questsRes.data.success && questsRes.data.data) {
-           setActiveQuests(questsRes.data.data.filter(q => !q.isClaimed));
+           computedReading = readingRes.data.data.reduce((acc, log) => acc + log.pagesRead, 0);
         }
 
         setSummary({
@@ -208,6 +198,12 @@ const Dashboard = () => {
               <p className="text-4xl font-bold">{summary.streakDays}</p>
               <span className="text-sm opacity-80">days</span>
             </div>
+            {(user?.shields > 0) && (
+              <div className="mt-2 flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full w-fit">
+                <Shield size={12} className="text-[#fde047]" fill="currentColor" />
+                <span className="text-xs font-semibold text-[#fde047]">{user.shields} Active {user.shields === 1 ? 'Shield' : 'Shields'}</span>
+              </div>
+            )}
             <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
               Check Status <ArrowRight size={16} className="ml-1" />
             </div>
@@ -232,42 +228,6 @@ const Dashboard = () => {
         </Link>
 
       </div>
-
-      {/* Active Quests Widget */}
-      {activeQuests.length > 0 && (
-        <div className="google-card p-6 md:p-8 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-indigo-900 flex items-center">
-              <Target className="mr-3 text-indigo-600" size={24} /> Active Quests
-            </h2>
-            <Link to="/quests" className="text-sm font-bold text-indigo-600 hover:bg-indigo-100 py-2 px-4 rounded-full transition">View All Quests</Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {activeQuests.slice(0, 3).map(quest => {
-              const progressPct = Math.min(100, Math.round((quest.currentProgress / quest.target) * 100));
-              return (
-                <div key={quest._id} onClick={() => navigate('/quests')} className="p-4 bg-white rounded-2xl border border-indigo-100 hover:shadow-md transition-all cursor-pointer group">
-                   <div className="flex justify-between items-start mb-2">
-                     <span className="font-bold text-gray-800 leading-tight flex items-center">
-                        <span className="text-xl mr-2">{quest.icon}</span> {quest.title}
-                     </span>
-                     {quest.isCompleted && <span className="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded-md animate-pulse">Claim!</span>}
-                   </div>
-                   <div className="mt-4">
-                     <div className="flex justify-between text-xs font-bold mb-1 text-gray-500">
-                       <span>{quest.currentProgress} / {quest.target}</span>
-                       <span className="text-indigo-600">{progressPct}%</span>
-                     </div>
-                     <div className="h-2 w-full bg-indigo-50 rounded-full overflow-hidden">
-                       <div className="h-full rounded-full transition-all duration-1000 bg-indigo-500" style={{ width: `${progressPct}%` }} />
-                     </div>
-                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Today's Tasks Widget */}
       <div className="google-card p-6 md:p-8 bg-white border border-[#dadce0]">

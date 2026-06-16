@@ -9,7 +9,8 @@ export const TimerProvider = ({ children }) => {
     const saved = localStorage.getItem('habitflow_timers') || sessionStorage.getItem('habitflow_timers');
     const defaultState = {
       work: { isRunning: false, startTime: null, elapsed: 0, activeTask: null },
-      social: { isRunning: false, startTime: null, elapsed: 0, platform: null }
+      social: { isRunning: false, startTime: null, elapsed: 0, platform: null },
+      reading: { isRunning: false, startTime: null, elapsed: 0 }
     };
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -20,7 +21,8 @@ export const TimerProvider = ({ children }) => {
 
   const timerRefs = useRef({
     work: null,
-    social: null
+    social: null,
+    reading: null
   });
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export const TimerProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    ['work', 'social'].forEach(type => {
+    ['work', 'social', 'reading'].forEach(type => {
       if (timers[type]?.isRunning && !timerRefs.current[type]) {
         updateElapsed(type);
         timerRefs.current[type] = setInterval(() => {
@@ -67,18 +69,18 @@ export const TimerProvider = ({ children }) => {
     });
 
     return () => {
-      ['work', 'social'].forEach(type => {
+      ['work', 'social', 'reading'].forEach(type => {
         if (!timers[type]?.isRunning && timerRefs.current[type]) {
            // Cleanup is handled by the clear condition above usually, but on unmount we want to clear all
         }
       });
     };
-  }, [timers.work?.isRunning, timers.social?.isRunning]);
+  }, [timers.work?.isRunning, timers.social?.isRunning, timers.reading?.isRunning]);
 
   // Handle unmount completely
   useEffect(() => {
     return () => {
-      ['work', 'social'].forEach(type => {
+      ['work', 'social', 'reading'].forEach(type => {
         if (timerRefs.current[type]) {
           clearInterval(timerRefs.current[type]);
           timerRefs.current[type] = null;

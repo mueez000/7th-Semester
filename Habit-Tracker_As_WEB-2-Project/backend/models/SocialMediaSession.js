@@ -37,6 +37,8 @@ const socialMediaSessionSchema = new mongoose.Schema({
   timestamps: true
 });
 
+socialMediaSessionSchema.index({ userId: 1, date: -1 });
+
 const SocialMediaSession = mongoose.model('SocialMediaSession', socialMediaSessionSchema);
 
 export default SocialMediaSession;

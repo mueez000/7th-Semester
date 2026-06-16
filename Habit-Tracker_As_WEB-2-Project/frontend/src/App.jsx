@@ -19,8 +19,6 @@ import ReadingTracker from './pages/ReadingTracker';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
-import Shop from './pages/Shop';
-import Quests from './pages/Quests';
 import TodoPage from './pages/TodoPage';
 import NotFound from './pages/NotFound';
 import PageTransition from './components/common/PageTransition';
@@ -54,8 +52,6 @@ const AnimatedRoutes = () => {
           <Route path="streak" element={<PageTransition><StreakTracker /></PageTransition>} />
           <Route path="reading" element={<PageTransition><ReadingTracker /></PageTransition>} />
           <Route path="analytics" element={<PageTransition><Analytics /></PageTransition>} />
-          <Route path="shop" element={<PageTransition><Shop /></PageTransition>} />
-          <Route path="quests" element={<PageTransition><Quests /></PageTransition>} />
           <Route path="notifications" element={<PageTransition><Notifications /></PageTransition>} />
           <Route path="profile" element={<PageTransition><Profile /></PageTransition>} />
         </Route>
@@ -67,7 +63,25 @@ const AnimatedRoutes = () => {
   );
 };
 
+import { useEffect } from 'react';
+import toast from 'react-hot-toast';
+
 function App() {
+  useEffect(() => {
+    const handleOfflineQueue = () => {
+      toast.success('Saved locally. Will sync when online.', {
+        icon: '📶',
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
+    };
+    window.addEventListener('offline-sync-queued', handleOfflineQueue);
+    return () => window.removeEventListener('offline-sync-queued', handleOfflineQueue);
+  }, []);
+
   return (
     <AuthProvider>
       <NotificationsProvider>

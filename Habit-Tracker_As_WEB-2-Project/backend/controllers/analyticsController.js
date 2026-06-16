@@ -195,6 +195,30 @@ export const getAnalyticsOverview = async (req, res, next) => {
       pages: dailyReading[day]
     }));
 
+    // Timing Data for Line Charts
+    const timingData = { work: [], exercise: [], productivity: [], social: [], reading: [], streak: [] };
+    
+    workSessions.forEach(s => {
+      const d = new Date(s.startTime);
+      timingData.work.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+    });
+    exerciseLogs.forEach(l => {
+      const d = new Date(l.date);
+      timingData.exercise.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+    });
+    tasksCompletedThisMonth.forEach(t => {
+      const d = new Date(t.completedAt);
+      timingData.productivity.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+    });
+    socialSessions.forEach(s => {
+      const d = new Date(s.startTime);
+      timingData.social.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+    });
+    readingLogs.forEach(l => {
+      const d = new Date(l.date);
+      timingData.reading.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+    });
+
     // Monthly Averages
     let elapsedDays = endOfMonth.getDate();
     const now = new Date();
@@ -264,6 +288,19 @@ export const getAnalyticsOverview = async (req, res, next) => {
       readingBest = Math.max(readingBest, readingStreakVal);
     }
 
+    // For productivity best
+    const allTasksCompleted = await TodoTask.find({ userId: req.userId, status: 'completed', completedAt: { $ne: null } }).sort({ completedAt: 1 });
+    const prodDates = [...new Set(allTasksCompleted.map(t => formatLocalDate(t.completedAt)))];
+    let prodStreak = 0, prodBest = 0;
+    for (let i = 0; i < prodDates.length; i++) {
+      if (i === 0) { prodStreak = 1; }
+      else {
+        const diff = (new Date(prodDates[i]) - new Date(prodDates[i-1])) / 86400000;
+        prodStreak = diff === 1 ? prodStreak + 1 : 1;
+      }
+      prodBest = Math.max(prodBest, prodStreak);
+    }
+
     // For social best, we find the lowest daily total among active days
     const allSocial = await SocialMediaSession.find({ userId: req.userId, endTime: { $ne: null } });
     const allSocialDaily = {};
@@ -277,6 +314,15 @@ export const getAnalyticsOverview = async (req, res, next) => {
 
     const streakLog = await StreakLog.findOne({ userId: req.userId });
     const streakBest = streakLog ? streakLog.longestStreak : 0;
+    
+    if (streakLog && streakLog.relapseHistory) {
+      streakLog.relapseHistory.forEach(r => {
+        const d = new Date(r.date);
+        if (d >= startOfMonth && d <= endOfMonth) {
+          timingData.streak.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+        }
+      });
+    }
 
     const streakActiveDatesSet = new Set();
     const streakRelapsesSet = new Set();
@@ -344,6 +390,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
       namaz: namazBest,
       work: workBest,
       exercise: exBest,
+      productivity: prodBest,
       reading: readingBest,
       social: socialBest,
       streak: streakBest
@@ -359,6 +406,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
         socialData,
         readingData,
         streakData,
+        timingData,
         monthlyAverages,
         highestStreaks,
         calendar: {
@@ -384,3 +432,94 @@ export const getAnalyticsOverview = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getDailyTimeline = async (req, res, next) => {
+  try {
+    const dateQuery = req.query.date ? new Date(req.query.date) : new Date();
+    const startOfDay = new Date(dateQuery.getFullYear(), dateQuery.getMonth(), dateQuery.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(dateQuery.getFullYear(), dateQuery.getMonth(), dateQuery.getDate(), 23, 59, 59, 999);
+
+    const timeline = [];
+
+    const workSessions = await WorkSession.find({
+      userId: req.userId,
+      startTime: { $gte: startOfDay, $lte: endOfDay },
+      endTime: { $ne: null }
+    });
+    workSessions.forEach(w => {
+      timeline.push({
+        id: w._id,
+        type: 'Deep Work',
+        time: w.startTime,
+        duration: Math.round(w.duration / 60),
+        color: '#1a73e8'
+      });
+    });
+
+    const exerciseLogs = await ExerciseLog.find({
+      userId: req.userId,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    });
+    exerciseLogs.forEach(e => {
+      timeline.push({
+        id: e._id,
+        type: 'Exercise',
+        time: e.date,
+        duration: e.duration || 0,
+        color: '#e37400'
+      });
+    });
+
+    const todoTasks = await TodoTask.find({
+      userId: req.userId,
+      status: 'completed',
+      completedAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+    todoTasks.forEach(t => {
+      timeline.push({
+        id: t._id,
+        type: 'Task',
+        title: t.title,
+        time: t.completedAt,
+        duration: t.actualTime || 0,
+        color: '#fbbc04'
+      });
+    });
+
+    const socialSessions = await SocialMediaSession.find({
+      userId: req.userId,
+      startTime: { $gte: startOfDay, $lte: endOfDay }
+    });
+    socialSessions.forEach(s => {
+      timeline.push({
+        id: s._id,
+        type: 'Social Media',
+        time: s.startTime,
+        duration: Math.round(s.duration / 60),
+        color: '#E4405F'
+      });
+    });
+
+    const readingLogs = await ReadingLog.find({
+      userId: req.userId,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    });
+    readingLogs.forEach(r => {
+      timeline.push({
+        id: r._id,
+        type: 'Reading',
+        title: `${r.pagesRead} pages`,
+        time: r.date,
+        duration: 0,
+        color: '#b45309'
+      });
+    });
+
+    timeline.sort((a, b) => a.time - b.time);
+
+    res.json({ success: true, data: timeline });
+  } catch (error) {
+    next(error);
+  }
+};
+

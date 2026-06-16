@@ -41,6 +41,8 @@ const readingLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
+readingLogSchema.index({ userId: 1, date: -1 });
+
 const ReadingLog = mongoose.model('ReadingLog', readingLogSchema);
 
 export default ReadingLog;

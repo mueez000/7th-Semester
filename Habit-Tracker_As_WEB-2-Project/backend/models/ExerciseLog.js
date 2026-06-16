@@ -11,5 +11,7 @@ const exerciseLogSchema = new mongoose.Schema({
   date: { type: Date, required: true }
 });
 
+exerciseLogSchema.index({ userId: 1, date: -1 });
+
 const ExerciseLog = mongoose.model('ExerciseLog', exerciseLogSchema);
 export default ExerciseLog;

@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Book, Award, Calendar as CalendarIcon, Trash2, Plus, CheckCircle } from 'lucide-react';
+import { BookOpen, Book, Award, Calendar as CalendarIcon, Trash2, Plus, CheckCircle, Play, Square, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTimer } from '../context/TimerContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const ReadingTracker = () => {
   const { refreshGamification } = useAuth();
+  const { timers, startTimer, stopTimer } = useTimer();
+  const { isRunning, elapsed: seconds, activeBook } = timers.reading || { isRunning: false, elapsed: 0 };
   
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  
+  const [activeBookTitle, setActiveBookTitle] = useState('');
+  const [showLogModal, setShowLogModal] = useState(false);
   
   const [formData, setFormData] = useState({
     bookTitle: '',
@@ -57,6 +63,34 @@ const ReadingTracker = () => {
     }
   };
 
+  const toggleTimer = () => {
+    if (isRunning) {
+      const finalSeconds = stopTimer('reading');
+      const minutes = Math.ceil(finalSeconds / 60);
+      setFormData(prev => ({
+        ...prev,
+        duration: minutes.toString(),
+        bookTitle: activeBook || ''
+      }));
+      setShowLogModal(true);
+    } else {
+      if (!activeBookTitle.trim()) {
+        toast.error('Please enter a book title first');
+        return;
+      }
+      startTimer('reading', { activeBook: activeBookTitle });
+      toast('Reading focus started!', { icon: '🚀' });
+    }
+  };
+
+  const formatTime = (totalSeconds) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    
+    return `${h > 0 ? h.toString().padStart(2, '0') + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ 
@@ -93,6 +127,7 @@ const ReadingTracker = () => {
       if (res.data.success) {
         toast.success('Reading logged successfully!');
         setFormData({ bookTitle: '', pagesRead: '', duration: '', notes: '', isCompleted: false });
+        setShowLogModal(false);
         fetchReadingData();
         refreshGamification();
       }
@@ -152,100 +187,66 @@ const ReadingTracker = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-[24px] shadow-sm border border-[#dadce0] p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-              <Plus className="mr-2 text-[#b45309]" /> Log New Reading
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Book Title *</label>
-                  <input
-                    type="text"
-                    name="bookTitle"
-                    value={formData.bookTitle}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Atomic Habits"
-                    className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Pages Read *</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      name="pagesRead"
-                      value={formData.pagesRead}
-                      onChange={handleInputChange}
-                      placeholder="0"
-                      min="1"
-                      className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition"
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-1 mt-2">
-                    {[10, 20, 30, 50].map(amount => (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => quickAddPages(amount)}
-                        className="flex-1 py-1 px-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-semibold transition"
-                      >
-                        +{amount}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col items-center justify-center min-h-[300px]">
+            <div className="font-mono text-7xl md:text-9xl font-bold tracking-tight text-gray-900 drop-shadow-sm mb-8">
+              {formatTime(seconds)}
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Duration (minutes)</label>
-                <input
-                  type="number"
-                  name="duration"
-                  value={formData.duration}
-                  onChange={handleInputChange}
-                  placeholder="Optional time spent reading"
-                  min="1"
-                  className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition"
+            {!isRunning && (
+              <div className="mb-6 w-full max-w-xs">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 text-center">Reading Book <span className="text-gray-400 font-normal">(Required)</span></label>
+                <input 
+                  type="text"
+                  value={activeBookTitle}
+                  onChange={(e) => setActiveBookTitle(e.target.value)}
+                  placeholder="e.g. Atomic Habits"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#b45309] transition text-sm text-center"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Notes</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  placeholder="Any key takeaways or thoughts? (Optional)"
-                  rows="2"
-                  className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition resize-none"
-                ></textarea>
+            )}
+            
+            {isRunning && activeBook && (
+              <div className="mb-6 text-center">
+                <p className="text-sm font-medium text-gray-500">Currently reading:</p>
+                <p className="text-lg font-bold text-[#b45309] mt-1">{activeBook}</p>
               </div>
+            )}
 
-              <div className="flex items-center gap-3 bg-amber-50 p-3 rounded-xl border border-amber-100">
-                <input
-                  type="checkbox"
-                  name="isCompleted"
-                  id="isCompleted"
-                  checked={formData.isCompleted}
-                  onChange={handleInputChange}
-                  className="w-5 h-5 text-[#b45309] rounded focus:ring-[#b45309]"
-                />
-                <label htmlFor="isCompleted" className="text-sm font-semibold text-amber-900 cursor-pointer">
-                  I have finished this book completely
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-4 bg-[#b45309] hover:bg-[#92400e] text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center"
+            <button
+              disabled={loading}
+              onClick={toggleTimer}
+              className={`flex items-center justify-center px-10 py-5 rounded-full text-xl flex-col font-bold text-white transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl active:scale-95 ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              } ${
+                isRunning 
+                  ? 'bg-red-500 hover:bg-red-600 ring-4 ring-red-100 ring-offset-2' 
+                  : 'bg-[#b45309] hover:bg-[#92400e] ring-4 ring-amber-100 ring-offset-2'
+              }`}
+            >
+              {isRunning ? (
+                <>
+                  <Square size={32} fill="currentColor" className="mb-2" />
+                  STOP & LOG
+                </>
+              ) : (
+                <>
+                  <Play size={32} fill="currentColor" className="mb-2 ml-2" />
+                  START READING
+                </>
+              )}
+            </button>
+            
+            {!isRunning && (
+              <button 
+                onClick={() => {
+                  setFormData({ bookTitle: '', pagesRead: '', duration: '', notes: '', isCompleted: false });
+                  setShowLogModal(true);
+                }}
+                className="mt-6 text-sm font-semibold text-[#b45309] hover:underline"
               >
-                {submitting ? 'Saving...' : 'Save Reading Log'}
+                Log reading manually
               </button>
-            </form>
+            )}
           </div>
 
           <div className="bg-white rounded-[24px] shadow-sm border border-[#dadce0] p-6 text-left">
@@ -343,6 +344,115 @@ const ReadingTracker = () => {
           </div>
         </div>
       </div>
+      
+      {showLogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-[24px] shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <Plus className="mr-2 text-[#b45309]" /> Log Reading
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Book Title *</label>
+                  <input
+                    type="text"
+                    name="bookTitle"
+                    value={formData.bookTitle}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Atomic Habits"
+                    className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Pages Read *</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      name="pagesRead"
+                      value={formData.pagesRead}
+                      onChange={handleInputChange}
+                      placeholder="0"
+                      min="1"
+                      className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition"
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-1 mt-2">
+                    {[10, 20, 30, 50].map(amount => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => quickAddPages(amount)}
+                        className="flex-1 py-1 px-2 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-semibold transition"
+                      >
+                        +{amount}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Duration (minutes)</label>
+                <input
+                  type="number"
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleInputChange}
+                  placeholder="Optional time spent reading"
+                  min="1"
+                  className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Notes</label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  placeholder="Any key takeaways or thoughts? (Optional)"
+                  rows="2"
+                  className="w-full p-3 bg-gray-50 border border-[#dadce0] rounded-xl outline-none focus:ring-2 focus:ring-[#b45309] transition resize-none"
+                ></textarea>
+              </div>
+
+              <div className="flex items-center gap-3 bg-amber-50 p-3 rounded-xl border border-amber-100">
+                <input
+                  type="checkbox"
+                  name="isCompleted"
+                  id="isCompleted"
+                  checked={formData.isCompleted}
+                  onChange={handleInputChange}
+                  className="w-5 h-5 text-[#b45309] rounded focus:ring-[#b45309]"
+                />
+                <label htmlFor="isCompleted" className="text-sm font-semibold text-amber-900 cursor-pointer">
+                  I have finished this book completely
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-3 bg-[#b45309] hover:bg-[#92400e] text-white font-bold rounded-xl shadow-lg transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center"
+                >
+                  {submitting ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLogModal(false)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

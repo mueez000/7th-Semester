@@ -26,17 +26,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'To-Do', path: '/todo', icon: CheckSquare },
     { name: 'Namaz', path: '/namaz', icon: Moon },
     { name: 'Exercise', path: '/exercise', icon: Activity },
-    { name: 'To-Do', path: '/todo', icon: CheckSquare },
     { name: 'Reading', path: '/reading', icon: BookOpen },
     { name: 'Work Timer', path: '/work', icon: Clock },
     { name: 'Social Media', path: '/social', icon: Smartphone },
     { name: 'Streak', path: '/streak', icon: Shield },
     
     { name: 'Analytics', path: '/analytics', icon: BarChart2 },
-    { name: 'Quests', path: '/quests', icon: Target },
-    { name: 'Reward Shop', path: '/shop', icon: ShoppingBag },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Profile', path: '/profile', icon: User },
   ];

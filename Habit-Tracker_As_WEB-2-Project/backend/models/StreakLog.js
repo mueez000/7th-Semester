@@ -23,6 +23,10 @@ const streakLogSchema = new mongoose.Schema({
     type: Number, // in days
     default: 0
   },
+  shieldsEarned: {
+    type: Number, // how many shields this current streak has produced
+    default: 0
+  },
   longestStreak: {
     type: Number, // in days
     default: 0
@@ -33,6 +37,10 @@ const streakLogSchema = new mongoose.Schema({
       default: Date.now
     },
     withPorn: {
+      type: Boolean,
+      default: false
+    },
+    bathTaken: {
       type: Boolean,
       default: false
     },
