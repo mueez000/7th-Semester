@@ -5,11 +5,11 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const initialPrayers = [
-  { id: 'fajr', name: 'Fajr', time: 'Dawn', completed: false },
-  { id: 'zuhr', name: 'Zuhr', time: 'Midday', completed: false },
-  { id: 'asr', name: 'Asr', time: 'Afternoon', completed: false },
-  { id: 'maghrib', name: 'Maghrib', time: 'Sunset', completed: false },
-  { id: 'isha', name: 'Isha', time: 'Night', completed: false },
+  { id: 'fajr', name: 'Fajr', time: 'Dawn', status: 'none' },
+  { id: 'zuhr', name: 'Zuhr', time: 'Midday', status: 'none' },
+  { id: 'asr', name: 'Asr', time: 'Afternoon', status: 'none' },
+  { id: 'maghrib', name: 'Maghrib', time: 'Sunset', status: 'none' },
+  { id: 'isha', name: 'Isha', time: 'Night', status: 'none' },
 ];
 
 const NamazTracker = () => {
@@ -38,7 +38,7 @@ const NamazTracker = () => {
         const todayData = todayRes.data.data;
         setPrayers(prev => prev.map(p => ({
           ...p,
-          completed: todayData[p.id] || false
+          status: todayData[p.id] || 'none'
         })));
       }
 
@@ -53,19 +53,20 @@ const NamazTracker = () => {
     }
   };
 
-  const togglePrayer = async (id) => {
+  const updatePrayerStatus = async (id, newStatus) => {
     const prayerToUpdate = prayers.find(p => p.id === id);
-    if (!prayerToUpdate) return;
-    const completed = !prayerToUpdate.completed;
+    if (!prayerToUpdate || prayerToUpdate.status === newStatus) return;
+    
+    const previousStatus = prayerToUpdate.status;
 
     setPrayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, completed } : p))
+      prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p))
     );
 
     try {
-      await api.post('/namaz/log', { prayer: id, completed });
-      if (completed) {
-        toast.success(`${prayerToUpdate.name} marked as completed!`);
+      await api.post('/namaz/log', { prayer: id, status: newStatus });
+      if (newStatus === 'prayed' || newStatus === 'kaza') {
+        toast.success(`${prayerToUpdate.name} marked as ${newStatus}!`);
       }
 
       const monthlyRes = await api.get('/namaz/monthly');
@@ -76,12 +77,12 @@ const NamazTracker = () => {
     } catch (error) {
       toast.error('Failed to update prayer');
       setPrayers((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, completed: !completed } : p))
+        prev.map((p) => (p.id === id ? { ...p, status: previousStatus } : p))
       );
     }
   };
 
-  const completedCount = prayers.filter(p => p.completed).length;
+  const completedCount = prayers.filter(p => p.status === 'prayed' || p.status === 'kaza').length;
   
   // Dynamic percentage calculation
   const daysPassed = new Date().getDate();
@@ -123,28 +124,42 @@ const NamazTracker = () => {
                 {prayers.map((prayer) => (
                   <div 
                     key={prayer.id}
-                    onClick={() => togglePrayer(prayer.id)}
-                    className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all border ${
-                      prayer.completed 
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl transition-all border ${
+                      prayer.status === 'prayed' || prayer.status === 'kaza'
                         ? 'bg-emerald-50 border-emerald-200 shadow-sm' 
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        : 'bg-gray-50 border-gray-200'
                     }`}
                   >
-                    <div>
-                      <h3 className={`text-lg font-bold ${prayer.completed ? 'text-emerald-800' : 'text-gray-800'}`}>
+                    <div className="mb-3 sm:mb-0">
+                      <h3 className={`text-lg font-bold ${prayer.status === 'prayed' || prayer.status === 'kaza' ? 'text-emerald-800' : 'text-gray-800'}`}>
                         {prayer.name}
                       </h3>
-                      <p className={`text-sm ${prayer.completed ? 'text-emerald-600/80' : 'text-gray-500'}`}>
+                      <p className={`text-sm ${prayer.status === 'prayed' || prayer.status === 'kaza' ? 'text-emerald-600/80' : 'text-gray-500'}`}>
                         {prayer.time}
                       </p>
                     </div>
                     
-                    <div className="flex-shrink-0">
-                      {prayer.completed ? (
-                        <CheckCircle className="text-emerald-600" size={32} />
-                      ) : (
-                        <Circle className="text-gray-400" size={32} />
-                      )}
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => updatePrayerStatus(prayer.id, 'none')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${prayer.status === 'none' ? 'bg-gray-200 text-gray-800' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                      >
+                        Not Prayed
+                      </button>
+                      <button 
+                        onClick={() => updatePrayerStatus(prayer.id, 'kaza')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center ${prayer.status === 'kaza' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200'}`}
+                      >
+                        {prayer.status === 'kaza' && <CheckCircle size={16} className="mr-1" />}
+                        Kaza
+                      </button>
+                      <button 
+                        onClick={() => updatePrayerStatus(prayer.id, 'prayed')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center ${prayer.status === 'prayed' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200'}`}
+                      >
+                        {prayer.status === 'prayed' && <CheckCircle size={16} className="mr-1" />}
+                        Prayed
+                      </button>
                     </div>
                   </div>
                 ))}

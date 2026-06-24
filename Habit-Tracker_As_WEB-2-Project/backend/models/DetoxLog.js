@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-const streakLogSchema = new mongoose.Schema({
+const detoxLogSchema = new mongoose.Schema({
   _id: {
     type: String,
     default: uuidv4,
@@ -25,7 +25,7 @@ const streakLogSchema = new mongoose.Schema({
   },
   targetDays: {
     type: Number,
-    default: 5
+    default: 7
   },
   longestStreak: {
     type: Number, // in days
@@ -36,17 +36,9 @@ const streakLogSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     },
-    reason: {
+    app: {
       type: String,
       default: ''
-    },
-    withPorn: {
-      type: Boolean,
-      default: false
-    },
-    bathTaken: {
-      type: Boolean,
-      default: false
     },
     notes: {
       type: String,
@@ -75,6 +67,6 @@ const streakLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const StreakLog = mongoose.model('StreakLog', streakLogSchema);
+const DetoxLog = mongoose.model('DetoxLog', detoxLogSchema);
 
-export default StreakLog;
+export default DetoxLog;

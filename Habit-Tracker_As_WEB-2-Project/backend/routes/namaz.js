@@ -13,7 +13,7 @@ router.get('/monthly', getMonthlyNamazStats);
 
 router.post('/log', [
   check('prayer', 'Prayer name is required').notEmpty(),
-  check('completed', 'Completed must be boolean').isBoolean(),
+  check('status', 'Status must be a valid string').isIn(['none', 'prayed', 'kaza']),
   handleValidationErrors
 ], logNamaz);
 

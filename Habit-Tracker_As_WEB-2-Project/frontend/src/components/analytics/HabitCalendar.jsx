@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
   const { user } = useAuth();
   const [selectedDateStr, setSelectedDateStr] = useState(null);
-  const [activeHabit, setActiveHabit] = useState('namaz');
+  const [activeHabit, setActiveHabit] = useState('streak');
 
   const start = startOfMonth(selectedMonth);
   const end = endOfMonth(selectedMonth);
@@ -32,6 +32,8 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     return `${yr}-${mo}-${da}`;
   };
 
+  const emptyStateClass = { className: 'bg-gray-50 border-gray-200 border-dashed hover:border-gray-300', style: { backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px)' } };
+
   /**
    * Get the cell color classes based on selected habit and day data.
    * Returns Tailwind/CSS class string.
@@ -41,25 +43,18 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
 
     if (activeHabit === 'namaz') {
       const count = calendarData?.namazCounts?.[dateStr];
-      // count === undefined means no record in DB → white
-      if (count === undefined || count === null) {
-        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
-      }
-      // 0 prayers → red
+      if (count === undefined || count === null) return emptyStateClass;
       if (count === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
       if (count === 1) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
       if (count === 2) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
       if (count === 3) return { className: 'border-yellow-400 shadow-sm', style: { backgroundColor: '#fbbf24' } };
       if (count === 4) return { className: 'border-green-300 shadow-sm', style: { backgroundColor: '#c8e6c9' } };
-      // 5 → full green
       return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
     }
 
     if (activeHabit === 'work') {
       const minutes = calendarData?.workMinutes?.[dateStr];
-      if (minutes === undefined || minutes === null) {
-        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
-      }
+      if (minutes === undefined || minutes === null) return emptyStateClass;
       if (minutes === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
       if (minutes < 30) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
       if (minutes < 60) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
@@ -70,9 +65,7 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
 
     if (activeHabit === 'exercise') {
       const minutes = calendarData?.exerciseMinutes?.[dateStr];
-      if (minutes === undefined || minutes === null) {
-        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
-      }
+      if (minutes === undefined || minutes === null) return emptyStateClass;
       if (minutes === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
       if (minutes < 20) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
       if (minutes < 40) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
@@ -82,9 +75,7 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
 
     if (activeHabit === 'productivity') {
       const count = calendarData?.productivityCounts?.[dateStr];
-      if (count === undefined || count === null) {
-        return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
-      }
+      if (count === undefined || count === null) return emptyStateClass;
       if (count === 0) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
       if (count < 3) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
       if (count < 5) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
@@ -92,19 +83,9 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#a5d6a7' } };
     }
 
-    if (activeHabit === 'social') {
-      const minutes = calendarData?.socialMinutes?.[dateStr];
-      if (minutes === undefined || minutes === null) return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
-      if (minutes === 0) return { className: 'border-yellow-100 shadow-sm', style: { backgroundColor: '#fffde7' } };
-      if (minutes < 15) return { className: 'border-yellow-300 shadow-sm', style: { backgroundColor: '#fff9c4' } };
-      if (minutes < 30) return { className: 'border-orange-300 shadow-sm', style: { backgroundColor: '#ffe0b2' } };
-      if (minutes < 60) return { className: 'border-red-300 shadow-sm', style: { backgroundColor: '#ffcdd2' } };
-      return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#ef5350' } };
-    }
-
     if (activeHabit === 'reading') {
       const pages = calendarData?.readingPages?.[dateStr];
-      if (pages === undefined || pages === null) return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      if (pages === undefined || pages === null) return emptyStateClass;
       if (pages === 0) return { className: 'border-amber-100 shadow-sm', style: { backgroundColor: '#fff8e1' } };
       if (pages < 10) return { className: 'border-amber-200 shadow-sm', style: { backgroundColor: '#ffecb3' } };
       if (pages < 30) return { className: 'border-amber-300 shadow-sm', style: { backgroundColor: '#ffe082' } };
@@ -112,16 +93,24 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       return { className: 'border-amber-600 shadow-sm', style: { backgroundColor: '#ffb300' } };
     }
 
+    if (activeHabit === 'detox') {
+      const isActive = calendarData?.detox?.includes(dateStr);
+      const isRelapse = calendarData?.detoxRelapses?.includes(dateStr);
+      if (!isActive) return emptyStateClass;
+      if (isRelapse) return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#ef5350' } };
+      return { className: 'border-blue-500 shadow-sm', style: { backgroundColor: '#bfdbfe' } };
+    }
+
     if (activeHabit === 'streak') {
       const isActive = calendarData?.streak?.includes(dateStr);
       const isRelapse = calendarData?.streakRelapses?.includes(dateStr);
-      if (!isActive) return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+      if (!isActive) return emptyStateClass;
       if (isRelapse) return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#ef5350' } }; // red for relapse
       return { className: 'border-purple-500 shadow-sm', style: { backgroundColor: '#d8b4fe' } }; // purple for active
     }
 
     // Default: white
-    return { className: 'bg-white border-[#dadce0] hover:border-gray-300', style: {} };
+    return emptyStateClass;
   };
 
   const hasAnyData = (dateStr) => {
@@ -129,9 +118,9 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (activeHabit === 'work') return calendarData?.workMinutes?.[dateStr] !== undefined;
     if (activeHabit === 'exercise') return calendarData?.exerciseMinutes?.[dateStr] !== undefined;
     if (activeHabit === 'productivity') return calendarData?.productivityCounts?.[dateStr] !== undefined;
-    if (activeHabit === 'social') return calendarData?.socialMinutes?.[dateStr] !== undefined;
     if (activeHabit === 'reading') return calendarData?.readingPages?.[dateStr] !== undefined;
     if (activeHabit === 'streak') return calendarData?.streak?.includes(dateStr);
+    if (activeHabit === 'detox') return calendarData?.detox?.includes(dateStr);
     return false;
   };
 
@@ -142,20 +131,12 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (calendarData.work?.includes(dateStr)) details.push({ icon: <Clock size={14}/>, label: 'Work Session', color: 'text-blue-600' });
     if (calendarData.exercise?.includes(dateStr)) details.push({ icon: <Activity size={14}/>, label: 'Exercise', color: 'text-rose-600' });
     if (calendarData.productivity?.includes(dateStr)) details.push({ icon: <CheckCircle size={14}/>, label: 'Tasks Completed', color: 'text-amber-600' });
-    if (calendarData.social?.includes(dateStr)) details.push({ icon: <Smartphone size={14}/>, label: 'Social Media Logged', color: 'text-pink-600' });
     if (calendarData.reading?.includes(dateStr)) details.push({ icon: <BookOpen size={14}/>, label: 'Reading Logged', color: 'text-amber-600' });
     if (calendarData.streak?.includes(dateStr)) details.push({ icon: <Shield size={14}/>, label: 'Streak Active', color: 'text-purple-600' });
     if (calendarData.streakRelapses?.includes(dateStr)) details.push({ icon: <AlertTriangle size={14}/>, label: 'Streak Relapsed', color: 'text-red-600' });
+    if (calendarData.detox?.includes(dateStr)) details.push({ icon: <Shield size={14}/>, label: 'Detox Active', color: 'text-blue-600' });
+    if (calendarData.detoxRelapses?.includes(dateStr)) details.push({ icon: <AlertTriangle size={14}/>, label: 'Detox Relapsed', color: 'text-red-600' });
     return details;
-  };
-
-  // Legend labels per habit
-  const legendLabels = {
-    namaz: ['No data', '0 prayers', '1–2 prayers', '3–4 prayers', '5 prayers'],
-    work: ['No data', '0 min', '1–30 min', '30–60 min', '60–120 min', '>120 min'],
-    exercise: ['No data', '0 min', '1–20 min', '20–40 min', '40–60 min', '>60 min'],
-    productivity: ['No data', '0 tasks', '1–2 tasks', '3–4 tasks', '5–7 tasks', '8+ tasks'],
-    streak: ['No tracking', 'Active', 'Relapsed']
   };
 
   const getCellText = (dateStr) => {
@@ -166,9 +147,7 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (activeHabit === 'work') {
       const m = calendarData?.workMinutes?.[dateStr];
       if (m === undefined || m === null) return null;
-      const hrs = Math.floor(m / 60);
-      const mins = m % 60;
-      return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+      return `${parseFloat((m / 60).toFixed(1))}h`;
     }
     if (activeHabit === 'exercise') {
       const m = calendarData?.exerciseMinutes?.[dateStr];
@@ -178,17 +157,22 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       const c = calendarData?.productivityCounts?.[dateStr];
       return c !== undefined && c !== null ? `${c} task` : null;
     }
-    if (activeHabit === 'social') {
-      const m = calendarData?.socialMinutes?.[dateStr];
-      return m !== undefined && m !== null ? `${m}m` : null;
-    }
     if (activeHabit === 'reading') {
       const p = calendarData?.readingPages?.[dateStr];
       return p !== undefined && p !== null ? `${p} pg` : null;
     }
     if (activeHabit === 'streak') {
       if (calendarData?.streakRelapses?.includes(dateStr)) return 'Relapsed';
-      if (calendarData?.streak?.includes(dateStr)) return 'Active';
+      if (calendarData?.streak?.includes(dateStr)) {
+         return calendarData.streakDayNumbers?.[dateStr] ? `Day ${calendarData.streakDayNumbers[dateStr]}` : 'Active';
+      }
+      return null;
+    }
+    if (activeHabit === 'detox') {
+      if (calendarData?.detoxRelapses?.includes(dateStr)) return 'Relapsed';
+      if (calendarData?.detox?.includes(dateStr)) {
+         return calendarData.detoxDayNumbers?.[dateStr] ? `Day ${calendarData.detoxDayNumbers[dateStr]}` : 'Active';
+      }
       return null;
     }
     return null;
@@ -205,12 +189,12 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
                onChange={e => setActiveHabit(e.target.value)}
                className="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-semibold text-[#5f6368] hover:border-gray-300 focus:outline-none focus:border-[#1a73e8] transition"
              >
-               <option value="namaz">Namaz Data</option>
-               <option value="work">Deep Work Data</option>
-               <option value="exercise">Exercise Data</option>
                <option value="productivity">Tasks Data</option>
-               <option value="social">Social Media Data</option>
+               <option value="namaz">Namaz Data</option>
+               <option value="exercise">Exercise Data</option>
                <option value="reading">Reading Data</option>
+               <option value="work">Deep Work Data</option>
+               <option value="detox">Dopamine Detox</option>
                <option value="streak">Commitment Streak</option>
              </select>
           </div>

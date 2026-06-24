@@ -5,7 +5,7 @@ import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
 
 import TodoTask from '../models/TodoTask.js';
-import SocialMediaSession from '../models/SocialMediaSession.js';
+import DetoxLog from '../models/DetoxLog.js';
 import ReadingLog from '../models/ReadingLog.js';
 
 export const calculateNextLevelXP = (level) => {
@@ -104,11 +104,16 @@ const checkAndAwardBadges = async (userId, userLevel, lastSource) => {
     if (completedTasks >= 50) await awardBadge('Getting Things Done', '50 tasks completed! Your efficiency is off the charts.', '🚀');
   }
 
-  if (lastSource === 'social') {
-    const socialSessions = await SocialMediaSession.find({ userId });
-    const distinctDays = new Set(socialSessions.map(s => s.startTime.toISOString().split('T')[0])).size;
-    if (distinctDays >= 7) await awardBadge('Mindful Scroller', 'Logged 7 days of conscious social media usage.', '📱');
-    if (socialSessions.length >= 1) await awardBadge('Digital Detox', 'Taking control of your screen time.', '🛑');
+  if (lastSource === 'detox_start') {
+    const detox = await DetoxLog.findOne({ userId });
+    if (detox) await awardBadge('Digital Detox', 'Taking control of your screen time.', '🛑');
+  }
+
+  if (lastSource === 'detox_relapse') {
+    const detox = await DetoxLog.findOne({ userId });
+    if (detox && detox.longestStreak >= 7) {
+      await awardBadge('Mindful Scroller', 'Logged 7 days of conscious dopamine detox.', '📱');
+    }
   }
 
   if (lastSource === 'reading') {

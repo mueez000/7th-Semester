@@ -10,9 +10,9 @@ const HabitTimingChart = ({ timingData }) => {
     work: { title: 'Deep Work', icon: <Clock size={16} />, color: '#1a73e8' },
     exercise: { title: 'Exercise', icon: <Activity size={16} />, color: '#e37400' },
     productivity: { title: 'Tasks', icon: <CheckCircle size={16} />, color: '#fbbc04' },
-    social: { title: 'Social Media', icon: <Smartphone size={16} />, color: '#E4405F' },
     reading: { title: 'Reading', icon: <BookOpen size={16} />, color: '#b45309' },
-    streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' }
+    streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' },
+    detox: { title: 'Detox Relapse', icon: <Activity size={16} />, color: '#1a73e8' }
   };
 
   const { title, icon, color } = options[activeHabit];
@@ -129,11 +129,11 @@ const HabitTimingChart = ({ timingData }) => {
                onChange={e => setActiveHabit(e.target.value)}
                className="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-semibold text-[#5f6368] hover:border-gray-300 focus:outline-none focus:border-[#1a73e8] transition"
              >
-               <option value="work">Deep Work Timing</option>
-               <option value="exercise">Exercise Timing</option>
                <option value="productivity">Tasks Timing</option>
-               <option value="social">Social Media Timing</option>
+               <option value="exercise">Exercise Timing</option>
                <option value="reading">Reading Timing</option>
+               <option value="work">Deep Work Timing</option>
+               <option value="detox">Detox Relapse Timing</option>
                <option value="streak">Relapse Timing</option>
              </select>
           </div>
@@ -196,6 +196,7 @@ const HabitTimingChart = ({ timingData }) => {
                 dataKey="timeDecimal" 
                 stroke={color} 
                 strokeWidth={3} 
+                connectNulls={true}
                 dot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#fff' }} 
                 activeDot={{ r: 7, strokeWidth: 0 }} 
               />

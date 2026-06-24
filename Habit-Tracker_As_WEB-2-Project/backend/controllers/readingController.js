@@ -1,6 +1,6 @@
 import ReadingLog from '../models/ReadingLog.js';
 import { awardXP } from '../services/gamification.js';
-import { progressQuest } from '../services/questService.js';
+
 
 export const logReading = async (req, res, next) => {
   try {
@@ -57,7 +57,7 @@ export const logReading = async (req, res, next) => {
     if (xpAmount > 0) {
       await awardXP(req.userId, xpAmount, 'reading', readingLog._id);
     }
-    await progressQuest(req.userId, 'reading', pagesRead);
+    // Removed progressQuest
 
     res.status(201).json({ success: true, data: readingLog });
   } catch (error) {

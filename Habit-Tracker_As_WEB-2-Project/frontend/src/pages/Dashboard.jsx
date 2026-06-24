@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Moon, Clock, Activity, ArrowRight, CheckSquare, Play, Smartphone, Shield, BookOpen, Target } from 'lucide-react';
+import { Moon, Clock, Activity, ArrowRight, CheckSquare, Play, Brain, Shield, BookOpen, Target } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import XPProgress from '../components/gamification/XPProgress';
 import api from '../services/api'; 
@@ -28,7 +28,7 @@ const Dashboard = () => {
           api.get('/work/today'),
           api.get('/exercise/today'),
           api.get(`/todo/tasks?dueDate=${new Date().toISOString().split('T')[0]}`),
-          api.get('/social/today'),
+          api.get('/detox/status'),
           api.get('/streak/status'),
           api.get('/reading/today')
         ]);
@@ -42,11 +42,11 @@ const Dashboard = () => {
 
         if (namazRes.data.success && namazRes.data.data) {
            const d = namazRes.data.data;
-           if (d.fajr) computedNamaz++;
-           if (d.zuhr) computedNamaz++;
-           if (d.asr) computedNamaz++;
-           if (d.maghrib) computedNamaz++;
-           if (d.isha) computedNamaz++;
+           if (d.fajr !== 'none') computedNamaz++;
+           if (d.zuhr !== 'none') computedNamaz++;
+           if (d.asr !== 'none') computedNamaz++;
+           if (d.maghrib !== 'none') computedNamaz++;
+           if (d.isha !== 'none') computedNamaz++;
         }
 
         if (workRes.data.success && workRes.data.data) {
@@ -64,8 +64,7 @@ const Dashboard = () => {
         }
 
         if (socialRes.data.success && socialRes.data.data) {
-           const totals = socialRes.data.data.totalDurationPerPlatform || {};
-           computedSocial = Math.round(Object.values(totals).reduce((a, b) => a + b, 0) / 60);
+           computedSocial = socialRes.data.data.currentStreak || 0;
         }
 
         if (streakRes.data.success && streakRes.data.data) {
@@ -170,19 +169,19 @@ const Dashboard = () => {
           </div>
         </Link>
 
-        {/* Social Media Card */}
-        <Link to="/social" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#E4405F]">
+        {/* Detox Card */}
+        <Link to="/detox" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#E4405F]">
           <div className="bg-[#E4405F] p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-4">
-              <Smartphone size={24} className="text-white" />
+              <Brain size={24} className="text-white" />
             </div>
-            <h3 className="text-lg font-semibold opacity-90">Social Media</h3>
+            <h3 className="text-lg font-semibold opacity-90">Dopamine Detox</h3>
             <div className="mt-2 flex items-baseline gap-2">
               <p className="text-4xl font-bold">{summary.socialMins}</p>
-              <span className="text-sm opacity-80">mins today</span>
+              <span className="text-sm opacity-80">days clean</span>
             </div>
             <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
-              Open Timer <ArrowRight size={16} className="ml-1" />
+              Check Status <ArrowRight size={16} className="ml-1" />
             </div>
           </div>
         </Link>

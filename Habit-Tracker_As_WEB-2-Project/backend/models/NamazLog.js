@@ -5,11 +5,11 @@ const namazLogSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 },
   userId: { type: String, ref: 'User', required: true },
   date: { type: Date, required: true },
-  fajr: { type: Boolean, default: false },
-  zuhr: { type: Boolean, default: false },
-  asr: { type: Boolean, default: false },
-  maghrib: { type: Boolean, default: false },
-  isha: { type: Boolean, default: false }
+  fajr: { type: String, enum: ['none', 'prayed', 'kaza', 'true', 'false'], default: 'none' },
+  zuhr: { type: String, enum: ['none', 'prayed', 'kaza', 'true', 'false'], default: 'none' },
+  asr: { type: String, enum: ['none', 'prayed', 'kaza', 'true', 'false'], default: 'none' },
+  maghrib: { type: String, enum: ['none', 'prayed', 'kaza', 'true', 'false'], default: 'none' },
+  isha: { type: String, enum: ['none', 'prayed', 'kaza', 'true', 'false'], default: 'none' }
 });
 
 namazLogSchema.index({ userId: 1, date: -1 });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { BarChart2, Layers, CheckCircle, Download, Clock, Moon, Activity, Flame, Smartphone, BookOpen, Shield } from 'lucide-react';
+import { BarChart2, Layers, CheckCircle, Download, Clock, Moon, Activity, Flame, Brain, BookOpen, Shield } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import HabitCalendar from '../components/analytics/HabitCalendar';
@@ -22,6 +22,7 @@ const Analytics = () => {
     timingData: { work: [], exercise: [], productivity: [], social: [], reading: [] },
     monthlyAverages: {},
     highestStreaks: {},
+    allTimeNamazStats: { total: 0, onTime: 0, qaza: 0, missed: 0, onTimePercentage: 0, qazaPercentage: 0, missedPercentage: 0 },
     calendar: {
       namaz: [], work: [], exercise: [], productivity: [],
       namazCounts: {}, workMinutes: {}, exerciseMinutes: {}, productivityCounts: {}
@@ -109,7 +110,7 @@ const Analytics = () => {
               { icon: <Clock size={15}/>, label: 'Deep Work', value: `${data.monthlyAverages?.work || 0} hrs/day`, color: 'text-blue-600' },
               { icon: <Activity size={15}/>, label: 'Exercise', value: `${data.monthlyAverages?.exercise || 0} mins/day`, color: 'text-rose-600' },
               { icon: <CheckCircle size={15}/>, label: 'Tasks', value: `${data.monthlyAverages?.productivity || 0} /day`, color: 'text-amber-600' },
-              { icon: <Smartphone size={15}/>, label: 'Social Media', value: `${data.monthlyAverages?.social || 0} mins/day`, color: 'text-pink-600' },
+              { icon: <Brain size={15}/>, label: 'Dopamine Detox', value: `${data.monthlyAverages?.detox || 0} relapses`, color: 'text-pink-600' },
               { icon: <BookOpen size={15}/>, label: 'Reading', value: `${data.monthlyAverages?.reading || 0} pgs/day`, color: 'text-[#b45309]' },
               { icon: <Shield size={15}/>, label: 'Commitment', value: `${data.monthlyAverages?.streak || 0} relapses`, color: 'text-purple-600' },
             ].map(row => (
@@ -133,13 +134,13 @@ const Analytics = () => {
               { label: 'Exercise', value: data.highestStreaks?.exercise || 0, color: 'bg-rose-50 text-rose-700 border-rose-200' },
               { label: 'Tasks', value: data.highestStreaks?.productivity || 0, color: 'bg-[#fff8e1] text-[#b08d00] border-[#ffe082]' },
               { label: 'Reading', value: data.highestStreaks?.reading || 0, color: 'bg-amber-50 text-[#b45309] border-amber-200' },
-              { label: 'Social Media', value: `${data.highestStreaks?.social || 0}m`, color: 'bg-pink-50 text-pink-700 border-pink-200' },
+              { label: 'Dopamine Detox', value: data.highestStreaks?.detox || 0, color: 'bg-pink-50 text-pink-700 border-pink-200' },
               { label: 'Commitment', value: data.highestStreaks?.streak || 0, color: 'bg-purple-50 text-[#6b21a8] border-purple-200 col-span-2 lg:col-span-3', icon: <Shield size={14} className="inline mr-1"/> },
             ].map(item => (
               <div key={item.label} className={`rounded-2xl border p-3 text-center ${item.color} ${item.label === 'Commitment' ? 'py-4' : ''}`}>
                 <p className="text-2xl font-bold">{item.value}</p>
                 <p className="text-xs font-semibold mt-0.5 opacity-80">{item.icon}{item.label}</p>
-                <p className="text-[10px] opacity-60">{item.label === 'Social Media' ? 'best session' : 'days'}</p>
+                <p className="text-[10px] opacity-60">{item.label === 'Dopamine Detox' ? 'days clean' : 'days'}</p>
               </div>
             ))}
           </div>
@@ -210,8 +211,8 @@ const Analytics = () => {
           )}
         </ChartCard>
 
-        <ChartCard title="Social Media Time" icon={<Smartphone size={20}/>} color="#E4405F">
-          {!data.socialData || data.socialData.length === 0 ? <EmptyState msg="No social media logged" /> : (
+        <ChartCard title="Dopamine Detox" icon={<Brain size={20}/>} color="#E4405F">
+          {!data.socialData || data.socialData.length === 0 ? <EmptyState msg="No detox logs" /> : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.socialData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f3f4" />
@@ -245,6 +246,35 @@ const Analytics = () => {
         </ChartCard>
 
       </div>
+
+      {/* All-Time Namaz Statistics */}
+      {data.allTimeNamazStats && data.allTimeNamazStats.total > 0 && (
+        <div className="google-card p-6 w-full animate-in fade-in duration-500 delay-200">
+          <h3 className="text-lg font-bold text-[#202124] flex items-center mb-5 border-b pb-3">
+            <Layers className="text-[#34a853] mr-2" size={24} /> All-Time Namaz History (Since Day 1)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 flex flex-col items-center justify-center text-center">
+              <span className="text-sm font-semibold text-emerald-700 uppercase tracking-widest mb-1">On Time</span>
+              <span className="text-4xl font-black text-emerald-600 mb-2">{data.allTimeNamazStats.onTimePercentage}%</span>
+              <span className="text-xs text-emerald-600/80 font-medium bg-emerald-100/50 px-3 py-1 rounded-full">{data.allTimeNamazStats.onTime} prayers</span>
+            </div>
+            
+            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 flex flex-col items-center justify-center text-center">
+              <span className="text-sm font-semibold text-amber-700 uppercase tracking-widest mb-1">Qaza (Delayed)</span>
+              <span className="text-4xl font-black text-amber-600 mb-2">{data.allTimeNamazStats.qazaPercentage}%</span>
+              <span className="text-xs text-amber-600/80 font-medium bg-amber-100/50 px-3 py-1 rounded-full">{data.allTimeNamazStats.qaza} prayers</span>
+            </div>
+
+            <div className="bg-rose-50 rounded-2xl p-5 border border-rose-100 flex flex-col items-center justify-center text-center">
+              <span className="text-sm font-semibold text-rose-700 uppercase tracking-widest mb-1">Missed (Chori)</span>
+              <span className="text-4xl font-black text-rose-600 mb-2">{data.allTimeNamazStats.missedPercentage}%</span>
+              <span className="text-xs text-rose-600/80 font-medium bg-rose-100/50 px-3 py-1 rounded-full">{data.allTimeNamazStats.missed} prayers</span>
+            </div>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-4 font-medium uppercase tracking-widest">Total Possible Prayers: {data.allTimeNamazStats.total}</p>
+        </div>
+      )}
     </div>
   );
 };

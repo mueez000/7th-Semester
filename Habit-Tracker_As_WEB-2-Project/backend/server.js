@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import { initDb } from './utils/db.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import startCronJobs from './services/cronJobs.js';
 
 // Route imports
 import authRoutes from './routes/auth.js';
@@ -11,7 +12,6 @@ import userRoutes from './routes/users.js';
 import namazRoutes from './routes/namaz.js';
 import streakRoutes from './routes/streak.js';
 import rewardRoutes from './routes/rewardRoutes.js';
-import questRoutes from './routes/questRoutes.js';
 import exerciseRoutes from './routes/exercise.js';
 import workRoutes from './routes/work.js';
 
@@ -20,7 +20,7 @@ import todoRoutes from './routes/todo.js';
 import exportRoutes from './routes/export.js';
 import gamificationRoutes from './routes/gamification.js';
 
-import socialMediaRoutes from './routes/socialMedia.js';
+import detoxRoutes from './routes/detoxRoutes.js';
 import readingRoutes from './routes/reading.js';
 
 import path from 'path';
@@ -103,9 +103,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/namaz', namazRoutes);
 app.use('/api/streak', streakRoutes);
 app.use('/api/rewards', rewardRoutes);
-app.use('/api/quests', questRoutes);
 
-app.use('/api/social', socialMediaRoutes);
+app.use('/api/detox', detoxRoutes);
 app.use('/api/reading', readingRoutes);
 
 app.get('/api/test-users', async (req, res) => {
@@ -127,6 +126,9 @@ const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production' || process.env.RUN_LOCAL === 'true') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    
+    // Start background cron jobs
+    startCronJobs();
   });
 }
 

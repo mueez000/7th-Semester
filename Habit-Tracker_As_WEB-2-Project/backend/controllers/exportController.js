@@ -4,7 +4,7 @@ import ExerciseLog from '../models/ExerciseLog.js';
 
 import TodoTask from '../models/TodoTask.js';
 import User from '../models/User.js';
-import SocialMediaSession from '../models/SocialMediaSession.js';
+import DetoxLog from '../models/DetoxLog.js';
 import ReadingLog from '../models/ReadingLog.js';
 
 export const getAllUserData = async (req, res, next) => {
@@ -28,7 +28,7 @@ export const getAllUserData = async (req, res, next) => {
     const todoTasks = await TodoTask.find({ userId });
 
     // 6. Social Media
-    const socialMediaSessions = await SocialMediaSession.find({ userId });
+    const detoxLogs = await DetoxLog.find({ userId });
     
     // 7. Reading Logs
     const readingLogs = await ReadingLog.find({ userId });
@@ -41,7 +41,7 @@ export const getAllUserData = async (req, res, next) => {
         workSessions,
         exerciseLogs,
         todoTasks,
-        socialMediaSessions,
+        detoxLogs,
         readingLogs
       }
     });

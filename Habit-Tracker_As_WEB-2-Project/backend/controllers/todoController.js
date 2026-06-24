@@ -2,7 +2,7 @@ import TodoList from '../models/TodoList.js';
 import TodoTask from '../models/TodoTask.js';
 import WorkSession from '../models/WorkSession.js';
 import { awardXP } from '../services/gamification.js';
-import { progressQuest } from '../services/questService.js';
+
 
 // --- LISTS ---
 export const getLists = async (req, res, next) => {
@@ -98,11 +98,17 @@ export const updateTask = async (req, res, next) => {
     const task = await TodoTask.findOne({ _id: req.params.id });
     if (!task || task.userId !== req.userId) return res.status(404).json({ success: false, error: 'Task not found' });
     
+    if (req.body.status === 'completed' && task.status !== 'completed') {
+      req.body.completedAt = new Date();
+    } else if (req.body.status && req.body.status !== 'completed' && task.status === 'completed') {
+      req.body.completedAt = null;
+    }
+    
     const updated = await TodoTask.findByIdAndUpdate(task._id, req.body, { new: true });
     
     if (req.body.status === 'completed' && task.status !== 'completed') {
       await awardXP(req.userId, 15, 'todo', task._id);
-      await progressQuest(req.userId, 'todo', 1);
+      // Removed progressQuest
     } else if (req.body.status && req.body.status !== 'completed' && task.status === 'completed') {
       await awardXP(req.userId, -15, 'todo_undo', task._id);
     }
@@ -142,11 +148,11 @@ export const completeTask = async (req, res, next) => {
     const task = await TodoTask.findOne({ _id: req.params.id });
     if (!task || task.userId !== req.userId) return res.status(404).json({ success: false, error: 'Task not found' });
     
-    const updated = await TodoTask.findByIdAndUpdate(task._id, { status: 'completed' }, { new: true });
+    const updated = await TodoTask.findByIdAndUpdate(task._id, { status: 'completed', completedAt: new Date() }, { new: true });
     
     if (task.status !== 'completed') {
       await awardXP(req.userId, 15, 'todo', task._id);
-      await progressQuest(req.userId, 'todo', 1);
+      // Removed progressQuest
     }
     
     res.json({ success: true, data: updated });

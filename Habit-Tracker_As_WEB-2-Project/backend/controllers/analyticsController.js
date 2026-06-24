@@ -2,7 +2,7 @@ import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
 import ExerciseLog from '../models/ExerciseLog.js';
 import TodoTask from '../models/TodoTask.js';
-import SocialMediaSession from '../models/SocialMediaSession.js';
+import DetoxLog from '../models/DetoxLog.js';
 import ReadingLog from '../models/ReadingLog.js';
 import StreakLog from '../models/StreakLog.js';
 
@@ -34,13 +34,19 @@ export const getAnalyticsOverview = async (req, res, next) => {
       date: { $gte: startOfMonth, $lte: endOfMonth } 
     }).sort({ date: 1 });
 
+    const normalize = (val) => {
+      if (val === true || val === 'true') return 'prayed';
+      if (val === false || val === 'false') return 'none';
+      return val || 'none';
+    };
+
     const namazData = namazLogs.map(log => {
       let prayers = 0;
-      if (log.fajr) prayers++;
-      if (log.zuhr) prayers++;
-      if (log.asr) prayers++;
-      if (log.maghrib) prayers++;
-      if (log.isha) prayers++;
+      if (normalize(log.fajr) !== 'none') prayers++;
+      if (normalize(log.zuhr) !== 'none') prayers++;
+      if (normalize(log.asr) !== 'none') prayers++;
+      if (normalize(log.maghrib) !== 'none') prayers++;
+      if (normalize(log.isha) !== 'none') prayers++;
       
       return {
         date: log.date.getDate() + (['st', 'nd', 'rd'][((log.date.getDate()+90)%100-10)%10-1] || 'th'),
@@ -52,16 +58,16 @@ export const getAnalyticsOverview = async (req, res, next) => {
     namazLogs.forEach(log => {
       const dateStr = formatLocalDate(log.date);
       let count = 0;
-      if (log.fajr) count++;
-      if (log.zuhr) count++;
-      if (log.asr) count++;
-      if (log.maghrib) count++;
-      if (log.isha) count++;
+      if (normalize(log.fajr) !== 'none') count++;
+      if (normalize(log.zuhr) !== 'none') count++;
+      if (normalize(log.asr) !== 'none') count++;
+      if (normalize(log.maghrib) !== 'none') count++;
+      if (normalize(log.isha) !== 'none') count++;
       namazCounts[dateStr] = count;
     });
 
     const namazActiveDates = namazLogs
-      .filter(log => (log.fajr || log.zuhr || log.asr || log.maghrib || log.isha))
+      .filter(log => (normalize(log.fajr) !== 'none' || normalize(log.zuhr) !== 'none' || normalize(log.asr) !== 'none' || normalize(log.maghrib) !== 'none' || normalize(log.isha) !== 'none'))
       .map(log => formatLocalDate(log.date));
 
     // 2. Work Data
@@ -146,10 +152,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
     }));
 
     // 5. Social Media Data
-    const socialSessions = await SocialMediaSession.find({
-      userId: req.userId,
-      startTime: { $gte: startOfMonth, $lte: endOfMonth }
-    });
+    const socialSessions = [];
     const dailySocial = {};
     const socialMinutes = {};
     const socialActiveDatesSet = new Set();
@@ -196,7 +199,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
     }));
 
     // Timing Data for Line Charts
-    const timingData = { work: [], exercise: [], productivity: [], social: [], reading: [], streak: [] };
+    const timingData = { work: [], exercise: [], productivity: [], social: [], reading: [], streak: [], detox: [] };
     
     workSessions.forEach(s => {
       const d = new Date(s.startTime);
@@ -248,8 +251,33 @@ export const getAnalyticsOverview = async (req, res, next) => {
     const allNamaz = await NamazLog.find({ userId: req.userId }).sort({ date: 1 });
     let namazStreak = 0, namazBest = 0;
     for (const log of allNamaz) {
-      const done = log.fajr || log.zuhr || log.asr || log.maghrib || log.isha;
+      const done = normalize(log.fajr) !== 'none' || normalize(log.zuhr) !== 'none' || normalize(log.asr) !== 'none' || normalize(log.maghrib) !== 'none' || normalize(log.isha) !== 'none';
       if (done) { namazStreak++; namazBest = Math.max(namazBest, namazStreak); } else { namazStreak = 0; }
+    }
+
+    let allTimeNamazStats = { total: 0, onTime: 0, qaza: 0, missed: 0, onTimePercentage: 0, qazaPercentage: 0, missedPercentage: 0 };
+    if (allNamaz.length > 0) {
+      const firstDate = new Date(allNamaz[0].date);
+      firstDate.setHours(0,0,0,0);
+      const todayDate = new Date();
+      todayDate.setHours(23,59,59,999);
+      const totalDays = Math.max(1, Math.ceil((todayDate - firstDate) / 86400000));
+      allTimeNamazStats.total = totalDays * 5;
+      
+      allNamaz.forEach(log => {
+        const prayers = [log.fajr, log.zuhr, log.asr, log.maghrib, log.isha];
+        prayers.forEach(p => {
+          const val = normalize(p);
+          if (val === 'prayed') allTimeNamazStats.onTime++;
+          else if (val === 'kaza') allTimeNamazStats.qaza++;
+        });
+      });
+      
+      allTimeNamazStats.missed = allTimeNamazStats.total - allTimeNamazStats.onTime - allTimeNamazStats.qaza;
+      
+      allTimeNamazStats.onTimePercentage = Number(((allTimeNamazStats.onTime / allTimeNamazStats.total) * 100).toFixed(1));
+      allTimeNamazStats.qazaPercentage = Number(((allTimeNamazStats.qaza / allTimeNamazStats.total) * 100).toFixed(1));
+      allTimeNamazStats.missedPercentage = Number(((allTimeNamazStats.missed / allTimeNamazStats.total) * 100).toFixed(1));
     }
 
     const allWork = await WorkSession.find({ userId: req.userId, endTime: { $ne: null } }).sort({ startTime: 1 });
@@ -302,7 +330,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
     }
 
     // For social best, we find the lowest daily total among active days
-    const allSocial = await SocialMediaSession.find({ userId: req.userId, endTime: { $ne: null } });
+    const allSocial = [];
     const allSocialDaily = {};
     allSocial.forEach(session => {
       const dateStr = formatLocalDate(session.startTime);
@@ -327,14 +355,33 @@ export const getAnalyticsOverview = async (req, res, next) => {
     const streakActiveDatesSet = new Set();
     const streakRelapsesSet = new Set();
     
+    
+    const streakDayNumbers = {};
     if (streakLog) {
       const createdAt = new Date(streakLog.createdAt || Date.now());
       createdAt.setHours(0, 0, 0, 0);
       const todayDate = new Date();
       todayDate.setHours(23, 59, 59, 999);
       
+      const relapses = streakLog.relapseHistory.map(r => {
+        const d = new Date(r.date);
+        d.setHours(0,0,0,0);
+        return d;
+      });
+
+      let currentStreakVal = 1;
       for (let d = new Date(createdAt); d <= todayDate; d.setDate(d.getDate() + 1)) {
-        streakActiveDatesSet.add(formatLocalDate(d));
+        const dTime = d.getTime();
+        const dateStr = formatLocalDate(d);
+        streakActiveDatesSet.add(dateStr);
+        
+        const isRelapse = relapses.some(r => r.getTime() === dTime);
+        if (isRelapse) {
+          currentStreakVal = 1;
+        } else {
+          streakDayNumbers[dateStr] = currentStreakVal;
+          currentStreakVal++;
+        }
       }
       
       streakLog.relapseHistory.forEach(relapse => {
@@ -343,6 +390,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
          }
       });
     }
+
     
     // Generate streakData for the charts (streak duration in days)
     const streakData = [];
@@ -386,6 +434,55 @@ export const getAnalyticsOverview = async (req, res, next) => {
 
     monthlyAverages.streak = relapsesThisMonth;
 
+    const detoxLog = await DetoxLog.findOne({ userId: req.userId });
+    const detoxActiveDatesSet = new Set();
+    const detoxRelapsesSet = new Set();
+    const detoxDayNumbers = {};
+    let detoxRelapsesThisMonth = 0;
+
+    if (detoxLog) {
+      const relapses = detoxLog.relapseHistory.map(r => {
+        const d = new Date(r.date);
+        d.setHours(0,0,0,0);
+        return d;
+      });
+      
+      detoxRelapsesThisMonth = detoxLog.relapseHistory.filter(r => new Date(r.date) >= startOfMonth && new Date(r.date) <= endOfMonth).length;
+
+      const createdAt = new Date(detoxLog.createdAt || detoxLog.startTime || Date.now());
+      createdAt.setHours(0, 0, 0, 0);
+      const todayDate = new Date();
+      todayDate.setHours(23, 59, 59, 999);
+
+      let currentDetoxVal = 1;
+      for (let d = new Date(createdAt); d <= todayDate; d.setDate(d.getDate() + 1)) {
+        const dTime = d.getTime();
+        const dateStr = formatLocalDate(d);
+        detoxActiveDatesSet.add(dateStr);
+
+        const isRelapse = relapses.some(r => r.getTime() === dTime);
+        if (isRelapse) {
+          currentDetoxVal = 1;
+        } else {
+          detoxDayNumbers[dateStr] = currentDetoxVal;
+          currentDetoxVal++;
+        }
+      }
+
+      detoxLog.relapseHistory.forEach(r => {
+        if (r.date) {
+           detoxRelapsesSet.add(formatLocalDate(r.date));
+           const dt = new Date(r.date);
+           if (dt >= startOfMonth && dt <= endOfMonth) {
+             timingData.detox.push({ date: formatLocalDate(dt), timeDecimal: Number((dt.getHours() + dt.getMinutes()/60).toFixed(2)), timestamp: dt.getTime() });
+           }
+        }
+      });
+    }
+    
+    monthlyAverages.detox = detoxRelapsesThisMonth;
+
+
     const highestStreaks = {
       namaz: namazBest,
       work: workBest,
@@ -393,7 +490,8 @@ export const getAnalyticsOverview = async (req, res, next) => {
       productivity: prodBest,
       reading: readingBest,
       social: socialBest,
-      streak: streakBest
+      streak: streakBest,
+      detox: detoxLog ? detoxLog.longestStreak : 0
     };
 
     res.json({
@@ -409,6 +507,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
         timingData,
         monthlyAverages,
         highestStreaks,
+        allTimeNamazStats,
         calendar: {
           namaz: namazActiveDates,
           work: Array.from(workActiveDatesSet),
@@ -423,7 +522,11 @@ export const getAnalyticsOverview = async (req, res, next) => {
           productivityCounts,
           socialMinutes,
           readingPages,
-          streakRelapses: Array.from(streakRelapsesSet)
+          streakRelapses: Array.from(streakRelapsesSet),
+          streakDayNumbers,
+          detox: Array.from(detoxActiveDatesSet),
+          detoxRelapses: Array.from(detoxRelapsesSet),
+          detoxDayNumbers
         }
       }
     });
@@ -486,10 +589,7 @@ export const getDailyTimeline = async (req, res, next) => {
       });
     });
 
-    const socialSessions = await SocialMediaSession.find({
-      userId: req.userId,
-      startTime: { $gte: startOfDay, $lte: endOfDay }
-    });
+    const socialSessions = [];
     socialSessions.forEach(s => {
       timeline.push({
         id: s._id,

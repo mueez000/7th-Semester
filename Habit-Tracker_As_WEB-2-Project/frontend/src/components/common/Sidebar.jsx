@@ -12,7 +12,7 @@ import {
   CheckSquare,
   X,
   Bell,
-  Smartphone,
+  Brain,
   Shield,
   BookOpen,
   ShoppingBag,
@@ -31,7 +31,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: 'Exercise', path: '/exercise', icon: Activity },
     { name: 'Reading', path: '/reading', icon: BookOpen },
     { name: 'Work Timer', path: '/work', icon: Clock },
-    { name: 'Social Media', path: '/social', icon: Smartphone },
+    { name: 'Dopamine Detox', path: '/detox', icon: Brain },
     { name: 'Streak', path: '/streak', icon: Shield },
     
     { name: 'Analytics', path: '/analytics', icon: BarChart2 },

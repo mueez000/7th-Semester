@@ -1,10 +1,10 @@
 import ExerciseLog from '../models/ExerciseLog.js';
 import { awardXP } from '../services/gamification.js';
-import { progressQuest } from '../services/questService.js';
+
 
 export const logExercise = async (req, res, next) => {
   try {
-    const { activityType, distance, duration, calories, date } = req.body;
+    const { activityType, distance, duration, calories, pushupSets, pushupReps, squatSets, squatReps, date } = req.body;
 
     let finalCalories = calories;
     if (!finalCalories && duration) {
@@ -13,6 +13,7 @@ export const logExercise = async (req, res, next) => {
       else if (type.includes('walk')) finalCalories = duration * 5;
       else if (type.includes('cycl')) finalCalories = duration * 8;
       else if (type.includes('gym') || type.includes('weight')) finalCalories = duration * 7;
+      else if (type === 'general') finalCalories = duration * 6;
       else finalCalories = duration * 5; // default fallback
     }
 
@@ -22,12 +23,23 @@ export const logExercise = async (req, res, next) => {
       distance,
       duration,
       calories: finalCalories,
+      pushupSets,
+      pushupReps,
+      squatSets,
+      squatReps,
       date: date || new Date()
     });
 
-    const xpAmount = Math.max(20, (duration || 0) * 2);
+    let xpAmount = Math.max(20, (duration || 0) * 2);
+    
+    if (activityType === 'General') {
+      const totalPushups = (pushupSets || 0) * (pushupReps || 0);
+      const totalSquats = (squatSets || 0) * (squatReps || 0);
+      const bonusXp = Math.floor((totalPushups + totalSquats) / 2);
+      xpAmount += bonusXp;
+    }
     await awardXP(req.userId, xpAmount, 'exercise', log._id);
-    await progressQuest(req.userId, 'exercise', finalCalories);
+    // Removed progressQuest
 
     res.status(201).json({ success: true, data: log });
   } catch (error) {
@@ -42,7 +54,13 @@ export const deleteExerciseLog = async (req, res, next) => {
     const exercise = await ExerciseLog.findOne({ _id: id, userId: req.userId });
     if (!exercise) return res.status(404).json({ success: false, error: 'Workout not found' });
     
-    const xpAmount = Math.max(20, (exercise.duration || 0) * 2);
+    let xpAmount = Math.max(20, (exercise.duration || 0) * 2);
+    if (exercise.activityType === 'General') {
+      const totalPushups = (exercise.pushupSets || 0) * (exercise.pushupReps || 0);
+      const totalSquats = (exercise.squatSets || 0) * (exercise.squatReps || 0);
+      const bonusXp = Math.floor((totalPushups + totalSquats) / 2);
+      xpAmount += bonusXp;
+    }
 
     await ExerciseLog.deleteOne({ _id: id, userId: req.userId });
     

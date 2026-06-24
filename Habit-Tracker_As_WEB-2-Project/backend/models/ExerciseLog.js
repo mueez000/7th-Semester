@@ -8,6 +8,10 @@ const exerciseLogSchema = new mongoose.Schema({
   distance: { type: Number },
   duration: { type: Number },
   calories: { type: Number },
+  pushupSets: { type: Number },
+  pushupReps: { type: Number },
+  squatSets: { type: Number },
+  squatReps: { type: Number },
   date: { type: Date, required: true }
 });
 

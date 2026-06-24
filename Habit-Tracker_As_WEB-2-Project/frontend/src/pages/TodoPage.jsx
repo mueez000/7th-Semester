@@ -131,7 +131,7 @@ const TodoPage = () => {
     setTasks(tasks.map(t => t._id === task._id ? { ...t, status: newStatus } : t));
     try {
       await api.put(`/todo/tasks/${task._id}`, { status: newStatus });
-      if (newStatus === 'completed') refreshGamification();
+      refreshGamification();
     } catch (error) {
       setTasks(tasks.map(t => t._id === task._id ? { ...t, status: task.status } : t));
       toast.error('Failed to update task');

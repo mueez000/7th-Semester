@@ -1,6 +1,6 @@
 import WorkSession from '../models/WorkSession.js';
 import { awardXP } from '../services/gamification.js';
-import { progressQuest } from '../services/questService.js';
+
 
 export const startWorkSession = async (req, res, next) => {
   try {
@@ -48,7 +48,7 @@ export const stopWorkSession = async (req, res, next) => {
       const minutes = Math.floor(session.duration / 60);
       const xpAmount = Math.max(5, minutes * 1); // Minimum 5 XP, 1 XP per minute
       await awardXP(req.userId, xpAmount, 'work', session._id);
-      await progressQuest(req.userId, 'work', minutes);
+      // Removed progressQuest
     }
 
     res.json({ success: true, data: session });

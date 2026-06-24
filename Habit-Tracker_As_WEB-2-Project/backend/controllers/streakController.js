@@ -1,10 +1,11 @@
 import StreakLog from '../models/StreakLog.js';
 import { awardXP } from '../services/gamification.js';
-import { progressQuest } from '../services/questService.js';
+
 import User from '../models/User.js';
 
 export const startStreak = async (req, res, next) => {
   try {
+    const { targetDays } = req.body || {};
     let streak = await StreakLog.findOne({ userId: req.userId });
     
     if (streak && streak.isActive) {
@@ -18,18 +19,18 @@ export const startStreak = async (req, res, next) => {
         isActive: true,
         currentStreak: 0,
         longestStreak: 0,
-        shieldsEarned: 0,
+        targetDays: targetDays || 5,
         relapseHistory: []
       });
     } else {
       streak.startTime = new Date();
       streak.isActive = true;
       streak.currentStreak = 0;
-      streak.shieldsEarned = 0;
+      if (targetDays) streak.targetDays = targetDays;
       await streak.save();
     }
 
-    await awardXP(req.userId, 10, 'streak_start', streak._id);
+    // Removed awardXP(10) for start
 
     res.status(201).json({ success: true, data: streak });
   } catch (error) {
@@ -49,23 +50,7 @@ export const getStreakStatus = async (req, res, next) => {
       const diffTime = Math.abs(now - streak.startTime);
       const durationDays = Math.floor((now.getTime() - streak.startTime.getTime()) / (1000 * 3600 * 24));
       
-      // We update progress using durationDays, setting isAbsolute to true
-      if (durationDays > 0) {
-        await progressQuest(req.userId, 'streak', durationDays, true);
-      }
-
-      const shieldsToEarn = Math.floor(durationDays / 90);
-      if (shieldsToEarn > (streak.shieldsEarned || 0)) {
-        const newShields = shieldsToEarn - (streak.shieldsEarned || 0);
-        streak.shieldsEarned = shieldsToEarn;
-        
-        const user = await User.findById(req.userId);
-        if (user) {
-          user.shields = (user.shields || 0) + newShields;
-          await user.save();
-          await awardXP(req.userId, newShields * 50, 'shield_earned', streak._id);
-        }
-      }
+      // Removed progressQuest
 
       streak.currentStreak = durationDays;
       if (durationDays > streak.longestStreak) {
@@ -75,7 +60,7 @@ export const getStreakStatus = async (req, res, next) => {
       await streak.save();
     }
 
-    res.json({ success: true, data: { ...streak.toObject(), currentStreak: streak.currentStreak } });
+    res.json({ success: true, data: { ...streak.toObject(), currentStreak: streak.currentStreak, targetDays: streak.targetDays } });
   } catch (error) {
     next(error);
   }
@@ -83,7 +68,7 @@ export const getStreakStatus = async (req, res, next) => {
 
 export const relapse = async (req, res, next) => {
   try {
-    const { withPorn, notes, bathTaken } = req.body;
+    const { reason, notes, withPorn, bathTaken } = req.body;
     
     const streak = await StreakLog.findOne({ userId: req.userId });
     if (!streak || !streak.isActive) {
@@ -94,38 +79,38 @@ export const relapse = async (req, res, next) => {
     const diffTime = Math.abs(now - streak.startTime);
     const durationDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    if (durationDays > streak.longestStreak) {
+    const currentLongest = streak.longestStreak || 0;
+    if (durationDays > currentLongest) {
       streak.longestStreak = durationDays;
     }
 
     let earnedXp = 0;
-    let usedShield = false;
-    const user = await User.findById(req.userId);
-
-    if (user && user.shields > 0) {
-      user.shields -= 1;
-      await user.save();
-      usedShield = true;
-      earnedXp = 0; // Shield protects from penalty
+    const currentTarget = streak.targetDays || 5;
+    
+    if (durationDays < currentTarget) {
+      earnedXp = -1000; // Heavy penalty
+      streak.targetDays = 5; // Reset target on penalty relapse
     } else {
-      if (withPorn || bathTaken === false) {
-        earnedXp = -500; // Heavy penalty
-      } else {
-        earnedXp = durationDays * 25; // XP only if without porn AND bath taken
-      }
+      earnedXp = 100; // Achieved target, reward XP
+      streak.targetDays = currentTarget + 1; // Increase target for next time
     }
+
+    const previousStartTime = streak.startTime;
+    const previousTargetDays = streak.targetDays;
 
     streak.relapseHistory.push({
       date: now,
+      reason: reason || '',
+      notes: notes || '',
       withPorn: Boolean(withPorn),
       bathTaken: Boolean(bathTaken),
-      notes: (notes || '') + (usedShield ? ' [Shield Used]' : ''),
-      xpEarned: earnedXp
+      xpEarned: earnedXp,
+      previousStartTime: previousStartTime,
+      previousTargetDays: previousTargetDays
     });
 
     streak.startTime = now;
     streak.currentStreak = 0;
-    streak.shieldsEarned = 0;
     streak.lastCheckIn = now;
     
     await streak.save();
@@ -175,10 +160,15 @@ export const deleteRelapse = async (req, res, next) => {
     
     const xpEarned = relapseEntry.xpEarned || 0;
 
+    if (relapseEntry.previousStartTime) {
+      streak.startTime = relapseEntry.previousStartTime;
+      streak.targetDays = relapseEntry.previousTargetDays || streak.targetDays;
+    }
+
     streak.relapseHistory = streak.relapseHistory.filter(r => r._id.toString() !== relapseId);
     await streak.save();
 
-    if (xpEarned > 0) {
+    if (xpEarned !== 0) {
       await awardXP(req.userId, -xpEarned, 'streak_relapse_undo', streak._id);
     }
 

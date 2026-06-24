@@ -151,11 +151,9 @@ const WorkTimer = () => {
   };
 
   const formatDuration = (totalSeconds) => {
-    if (!totalSeconds) return '0m';
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
+    if (!totalSeconds) return '0h';
+    const hours = (totalSeconds / 3600).toFixed(1);
+    return `${parseFloat(hours)}h`;
   };
 
   const handleDeleteSession = async (sessionId, e) => {

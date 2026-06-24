@@ -13,7 +13,7 @@ import Dashboard from './pages/Dashboard';
 import NamazTracker from './pages/NamazTracker';
 import WorkTimer from './pages/WorkTimer';
 import ExerciseTracker from './pages/ExerciseTracker';
-import SocialMediaTracker from './pages/SocialMediaTracker';
+import DopamineDetoxTracker from './pages/DopamineDetoxTracker';
 import StreakTracker from './pages/StreakTracker';
 import ReadingTracker from './pages/ReadingTracker';
 import Analytics from './pages/Analytics';
@@ -48,7 +48,7 @@ const AnimatedRoutes = () => {
           <Route path="namaz" element={<PageTransition><NamazTracker /></PageTransition>} />
           <Route path="work" element={<PageTransition><WorkTimer /></PageTransition>} />
           <Route path="exercise" element={<PageTransition><ExerciseTracker /></PageTransition>} />
-          <Route path="social" element={<PageTransition><SocialMediaTracker /></PageTransition>} />
+          <Route path="detox" element={<PageTransition><DopamineDetoxTracker /></PageTransition>} />
           <Route path="streak" element={<PageTransition><StreakTracker /></PageTransition>} />
           <Route path="reading" element={<PageTransition><ReadingTracker /></PageTransition>} />
           <Route path="analytics" element={<PageTransition><Analytics /></PageTransition>} />

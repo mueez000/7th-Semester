@@ -13,6 +13,10 @@ const ExerciseTracker = () => {
     distance: '',
     duration: '',
     calories: '',
+    pushupSets: '',
+    pushupReps: '',
+    squatSets: '',
+    squatReps: '',
   });
 
   const [loading, setLoading] = useState(true);
@@ -97,14 +101,18 @@ const ExerciseTracker = () => {
     try {
       const res = await api.post('/exercise/log', {
         activityType: formData.activityType,
-        distance: formData.distance ? Number(formData.distance) : null,
+        distance: formData.activityType !== 'General' && formData.distance ? Number(formData.distance) : null,
         duration: Number(formData.duration),
         calories: formData.calories ? Number(formData.calories) : null,
+        pushupSets: formData.activityType === 'General' && formData.pushupSets ? Number(formData.pushupSets) : null,
+        pushupReps: formData.activityType === 'General' && formData.pushupReps ? Number(formData.pushupReps) : null,
+        squatSets: formData.activityType === 'General' && formData.squatSets ? Number(formData.squatSets) : null,
+        squatReps: formData.activityType === 'General' && formData.squatReps ? Number(formData.squatReps) : null,
       });
 
       if (res.data.success) {
         toast.success(`Logged ${formData.distance ? formData.distance + 'km of ' : ''}${formData.activityType}!`);
-        setFormData({ activityType: 'Running', distance: '', duration: '', calories: '' });
+        setFormData({ activityType: 'Running', distance: '', duration: '', calories: '', pushupSets: '', pushupReps: '', squatSets: '', squatReps: '' });
         fetchExerciseData();
         refreshGamification();
       }
@@ -158,23 +166,58 @@ const ExerciseTracker = () => {
                   <option value="Walking">Walking</option>
                   <option value="Cycling">Cycling</option>
                   <option value="Gym">Gym</option>
-                  <option value="Custom">Custom</option>
+                  <option value="General">General (Pushups/Squats)</option>
                 </select>
               </div>
 
-              <div>
-                 <label className="block text-sm font-medium text-gray-700">Distance (km) <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
-                 <input 
-                   type="number" 
-                   name="distance" 
-                   step="0.01"
-                   min="0"
-                   value={formData.distance} 
-                   onChange={handleChange}
-                   placeholder="e.g. 5.0"
-                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-                 />
-              </div>
+              {formData.activityType !== 'General' && (
+                <div>
+                   <label className="block text-sm font-medium text-gray-700">Distance (km) <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+                   <input 
+                     type="number" 
+                     name="distance" 
+                     step="0.01"
+                     min="0"
+                     value={formData.distance} 
+                     onChange={handleChange}
+                     placeholder="e.g. 5.0"
+                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
+                   />
+                </div>
+              )}
+
+              {formData.activityType === 'General' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Pushups (Sets)</label>
+                    <input 
+                      type="number" name="pushupSets" min="0" value={formData.pushupSets} onChange={handleChange} placeholder="e.g. 3"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Pushups (Reps)</label>
+                    <input 
+                      type="number" name="pushupReps" min="0" value={formData.pushupReps} onChange={handleChange} placeholder="e.g. 15"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Squats (Sets)</label>
+                    <input 
+                      type="number" name="squatSets" min="0" value={formData.squatSets} onChange={handleChange} placeholder="e.g. 3"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Squats (Reps)</label>
+                    <input 
+                      type="number" name="squatReps" min="0" value={formData.squatReps} onChange={handleChange} placeholder="e.g. 20"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                  <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
@@ -186,7 +229,7 @@ const ExerciseTracker = () => {
                    value={formData.duration} 
                    onChange={handleChange}
                    placeholder="e.g. 45"
-                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
                  />
               </div>
 
@@ -199,7 +242,7 @@ const ExerciseTracker = () => {
                    value={formData.calories} 
                    onChange={handleChange}
                    placeholder="e.g. 320"
-                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-orange-500 focus:ring-orange-500"
                  />
               </div>
 
@@ -303,10 +346,17 @@ const ExerciseTracker = () => {
                     <span className="text-gray-400 mx-1">·</span>
                     {format(new Date(log.date), 'h:mm a')}
                   </p>
-                  {(log.distance != null || log.calories != null) && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {log.distance != null && <span>{log.distance} km</span>}
-                      {log.distance != null && log.calories != null && <span> · </span>}
+                  {(log.distance != null || log.calories != null || log.activityType === 'General') && (
+                    <p className="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-2">
+                      {log.activityType !== 'General' && log.distance != null && <span>{log.distance} km</span>}
+                      {log.activityType === 'General' && (
+                        <span>
+                          {log.pushupSets ? `${log.pushupSets}x${log.pushupReps} Pushups` : ''} 
+                          {log.pushupSets && log.squatSets ? ' · ' : ''}
+                          {log.squatSets ? `${log.squatSets}x${log.squatReps} Squats` : ''}
+                        </span>
+                      )}
+                      {(log.distance != null || log.activityType === 'General') && log.calories != null && <span> · </span>}
                       {log.calories != null && <span>{log.calories} kcal</span>}
                     </p>
                   )}

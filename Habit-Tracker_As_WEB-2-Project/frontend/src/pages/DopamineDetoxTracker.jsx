@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Shield, RefreshCw, AlertTriangle, Trash2 } from 'lucide-react';
+import { Brain, RefreshCw, AlertTriangle, Trash2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-const StreakTracker = () => {
+const DopamineDetoxTracker = () => {
   const { refreshGamification } = useAuth();
-  const [streakData, setStreakData] = useState(null);
+  const [detoxData, setDetoxData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -15,18 +15,18 @@ const StreakTracker = () => {
   
   const [showRelapseModal, setShowRelapseModal] = useState(false);
   const [relapseNotes, setRelapseNotes] = useState('');
-  const [bathTaken, setBathTaken] = useState(false);
+  const [relapseApp, setRelapseApp] = useState('');
   
-  const [initialTarget, setInitialTarget] = useState(5);
+  const [initialTarget, setInitialTarget] = useState(7);
 
   useEffect(() => {
-    fetchStreakData();
+    fetchDetoxData();
   }, []);
 
   useEffect(() => {
     let interval;
-    if (streakData && streakData.isActive && streakData.startTime) {
-      const start = new Date(streakData.startTime).getTime();
+    if (detoxData && detoxData.isActive && detoxData.startTime) {
+      const start = new Date(detoxData.startTime).getTime();
       
       const updateElapsed = () => {
         const now = new Date().getTime();
@@ -49,57 +49,57 @@ const StreakTracker = () => {
     }
     
     return () => clearInterval(interval);
-  }, [streakData]);
+  }, [detoxData]);
 
-  const fetchStreakData = async () => {
+  const fetchDetoxData = async () => {
     try {
       setLoading(true);
       const [statusRes, historyRes] = await Promise.all([
-        api.get('/streak/status'),
-        api.get('/streak/history')
+        api.get('/detox/status'),
+        api.get('/detox/history')
       ]);
 
       if (statusRes.data.success && statusRes.data.data) {
-        setStreakData(statusRes.data.data);
+        setDetoxData(statusRes.data.data);
       } else {
-        setStreakData(null);
+        setDetoxData(null);
       }
       
       if (historyRes.data.success) {
         setHistory(historyRes.data.data.relapseHistory || []);
       }
     } catch (error) {
-      toast.error('Failed to load streak data');
+      toast.error('Failed to load detox data');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const startStreak = async () => {
+  const startDetox = async () => {
     try {
-      const res = await api.post('/streak/start', { targetDays: initialTarget });
+      const res = await api.post('/detox/start', { targetDays: initialTarget });
       if (res.data.success) {
-        setStreakData(res.data.data);
+        setDetoxData(res.data.data);
         refreshGamification();
-        toast.success('Streak started. You got this!');
+        toast.success('Dopamine detox started. You got this!');
       }
     } catch (error) {
-      toast.error('Failed to start streak');
+      toast.error('Failed to start detox');
     }
   };
 
-  const handleRelapse = async (withPorn) => {
+  const handleRelapse = async () => {
     try {
-      const res = await api.post('/streak/relapse', { withPorn, notes: relapseNotes, bathTaken });
+      const res = await api.post('/detox/relapse', { app: relapseApp, notes: relapseNotes });
       if (res.data.success) {
-        setStreakData(res.data.data);
-        fetchStreakData(); // refresh history
+        setDetoxData(res.data.data);
+        fetchDetoxData(); // refresh history
         refreshGamification();
-        toast('Streak reset. Don\'t give up!', { icon: '🔄' });
+        toast('Detox timer reset. Don\'t give up!', { icon: '🔄' });
         setShowRelapseModal(false);
         setRelapseNotes('');
-        setBathTaken(false);
+        setRelapseApp('');
       }
     } catch (error) {
       toast.error('Failed to record relapse');
@@ -108,10 +108,10 @@ const StreakTracker = () => {
 
   const handleDeleteRelapse = async (id) => {
     try {
-      const res = await api.delete(`/streak/relapse/${id}`);
+      const res = await api.delete(`/detox/relapse/${id}`);
       if (res.data.success) {
         toast.success('Relapse history deleted');
-        fetchStreakData();
+        fetchDetoxData();
         refreshGamification();
       }
     } catch (error) {
@@ -120,60 +120,59 @@ const StreakTracker = () => {
   };
 
   const getEncouragement = (days) => {
-    if (days >= 90) return "Quarterly master!";
-    if (days >= 30) return "Monthly champion!";
+    if (days >= 90) return "Master of Focus!";
+    if (days >= 30) return "Monthly Champion!";
     if (days >= 7) return "One week strong!";
     if (days >= 1) return "Good start!";
-    return "Every minute counts. Keep going.";
+    return "Every minute counts. Stay away from the scroll.";
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-[#1e1b4b] flex items-center">
-            <Shield className="text-[#6b21a8] mr-2" size={28} />
-            Commitment Streak
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Brain className="text-[#E4405F] mr-2" size={28} />
+            Dopamine Detox
           </h1>
-          <p className="text-gray-600 mt-1">Track your progress and stay strong.</p>
+          <p className="text-gray-600 mt-1">Track your time away from mindless scrolling.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-center lg:text-left">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-[24px] shadow-sm border border-[#dadce0] p-8 flex flex-col items-center justify-center min-h-[350px] relative overflow-hidden">
-            {/* Background design */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#6b21a8] to-[#4c1d95]"></div>
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#E4405F] to-[#f58529]"></div>
             
             {loading ? (
-              <p className="text-gray-400">Loading your streak...</p>
-            ) : streakData && streakData.isActive ? (
+              <p className="text-gray-400">Loading your detox timer...</p>
+            ) : detoxData && detoxData.isActive ? (
               <>
-                <p className="text-[#6b21a8] font-bold tracking-widest uppercase mb-4 text-sm">
+                <p className="text-[#E4405F] font-bold tracking-widest uppercase mb-4 text-sm">
                   {getEncouragement(elapsed.days)}
                 </p>
                 <div className={`flex items-baseline justify-center gap-4 transition-all`}>
                   <div className="flex flex-col items-center">
-                    <span className="font-mono text-6xl md:text-8xl font-bold text-[#1e1b4b]">{elapsed.days}</span>
+                    <span className="font-mono text-6xl md:text-8xl font-bold text-gray-900">{elapsed.days}</span>
                     <span className="text-gray-500 font-medium mt-2">DAYS</span>
                   </div>
                   <span className="text-4xl text-gray-300 font-light">:</span>
                   <div className="flex flex-col items-center">
-                    <span className="font-mono text-4xl md:text-6xl font-bold text-[#4c1d95]">{elapsed.hours.toString().padStart(2, '0')}</span>
+                    <span className="font-mono text-4xl md:text-6xl font-bold text-[#f58529]">{elapsed.hours.toString().padStart(2, '0')}</span>
                     <span className="text-gray-500 font-medium mt-2 text-sm">HRS</span>
                   </div>
                   <span className="text-4xl text-gray-300 font-light">:</span>
                   <div className="flex flex-col items-center">
-                    <span className="font-mono text-4xl md:text-6xl font-bold text-[#6b21a8]">{elapsed.minutes.toString().padStart(2, '0')}</span>
+                    <span className="font-mono text-4xl md:text-6xl font-bold text-[#E4405F]">{elapsed.minutes.toString().padStart(2, '0')}</span>
                     <span className="text-gray-500 font-medium mt-2 text-sm">MINS</span>
                   </div>
                 </div>
 
                 <div className="mt-8 flex flex-col items-center">
                   <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full font-semibold text-sm border border-gray-200 shadow-sm">
-                    Target Goal: {streakData.targetDays || 5} Days
+                    Target Goal: {detoxData.targetDays || 7} Days
                   </div>
-                  {elapsed.days >= (streakData.targetDays || 5) ? (
+                  {elapsed.days >= (detoxData.targetDays || 7) ? (
                     <p className="text-emerald-600 font-bold text-xs mt-2 uppercase tracking-wide flex items-center">
                        🛡️ Shield Active (No Penalty)
                     </p>
@@ -196,9 +195,9 @@ const StreakTracker = () => {
               </>
             ) : (
               <div className="flex flex-col items-center">
-                <Shield size={64} className="text-gray-300 mb-6" />
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Ready to start?</h2>
-                <p className="text-gray-500 mb-6 max-w-sm">Begin your journey today. Your streak timer will run continuously in the background.</p>
+                <Brain size={64} className="text-gray-300 mb-6" />
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Ready to disconnect?</h2>
+                <p className="text-gray-500 mb-6 max-w-sm text-center">Start your dopamine detox. The timer runs continuously until you relapse.</p>
                 <div className="flex flex-col items-center gap-2 mb-8">
                   <label className="text-sm font-semibold text-gray-700">Initial Target Goal (Days)</label>
                   <input 
@@ -206,14 +205,14 @@ const StreakTracker = () => {
                     min="1" 
                     value={initialTarget} 
                     onChange={(e) => setInitialTarget(parseInt(e.target.value) || 1)}
-                    className="w-24 text-center p-2 border border-gray-300 rounded-lg outline-none focus:border-[#6b21a8] focus:ring-1 focus:ring-[#6b21a8]" 
+                    className="w-24 text-center p-2 border border-gray-300 rounded-lg outline-none focus:border-[#E4405F] focus:ring-1 focus:ring-[#E4405F]" 
                   />
                 </div>
                 <button
-                  onClick={startStreak}
-                  className="px-10 py-4 bg-[#6b21a8] hover:bg-[#581c87] text-white rounded-xl font-bold text-lg shadow-lg shadow-purple-500/30 transition-transform active:scale-95"
+                  onClick={startDetox}
+                  className="px-10 py-4 bg-[#E4405F] hover:bg-[#c13550] text-white rounded-xl font-bold text-lg shadow-lg shadow-pink-500/30 transition-transform active:scale-95"
                 >
-                  Start My Streak
+                  Start Detox
                 </button>
               </div>
             )}
@@ -227,23 +226,18 @@ const StreakTracker = () => {
                 ) : null}
                 {history.map((entry, idx) => (
                   <div key={idx} className="relative flex items-start gap-4 p-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${entry.withPorn ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 bg-red-100 text-red-600">
                       <AlertTriangle size={18} />
                     </div>
                     <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex-1">
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-bold text-gray-800 flex flex-wrap items-center gap-1">
-                          Relapse 
-                          {entry.withPorn !== undefined && (
-                            entry.withPorn ? <span className="text-red-500 text-xs px-2 py-0.5 bg-red-50 rounded-full uppercase">With Porn</span> : <span className="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 rounded-full uppercase">Without Porn</span>
-                          )}
-                          {entry.bathTaken !== undefined && (
-                            entry.bathTaken ? <span className="text-blue-500 text-xs px-2 py-0.5 bg-blue-50 rounded-full uppercase">Bath Taken</span> : <span className="text-gray-500 text-xs px-2 py-0.5 bg-gray-100 rounded-full uppercase">No Bath</span>
-                          )}
+                          Relapse
+                          {entry.app && <span className="text-pink-500 text-xs px-2 py-0.5 bg-pink-50 rounded-full uppercase ml-2">App: {entry.app}</span>}
                           {entry.xpEarned !== undefined && (
-                            entry.xpEarned < 0 ? <span className="text-red-600 text-xs font-bold">({entry.xpEarned} XP Penalty)</span> :
-                            entry.xpEarned === 0 ? <span className="text-emerald-600 text-xs font-bold ml-2">(Shield Used)</span> :
-                            <span className="text-green-600 text-xs font-bold">(+{entry.xpEarned} XP)</span>
+                            entry.xpEarned > 0 ? <span className="text-green-600 text-xs font-bold ml-2">(+{entry.xpEarned} XP)</span> : 
+                            entry.xpEarned < 0 ? <span className="text-red-600 text-xs font-bold ml-2">({entry.xpEarned} XP Penalty)</span> :
+                            <span className="text-emerald-600 text-xs font-bold ml-2">(Shield Used)</span>
                           )}
                         </span>
                         <div className="flex items-center gap-3">
@@ -269,20 +263,20 @@ const StreakTracker = () => {
 
         <div className="space-y-6">
           <div className="bg-white rounded-[24px] shadow-sm border border-[#dadce0] p-6 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 mb-4">
-              <Shield size={32} />
+            <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center text-[#E4405F] mb-4">
+              <Brain size={32} />
             </div>
-            <h3 className={`text-xl font-bold text-gray-900`}>
-              {streakData?.longestStreak || 0} days
+            <h3 className="text-xl font-bold text-gray-900">
+              {detoxData?.longestStreak || 0} days
             </h3>
-            <p className="text-gray-500 text-sm font-medium uppercase tracking-wider mt-1">Longest Streak</p>
+            <p className="text-gray-500 text-sm font-medium uppercase tracking-wider mt-1">Longest Detox</p>
             <p className="text-xs text-gray-400 mt-4 px-4">Your all-time best record</p>
           </div>
           
-          <div className="bg-purple-50 rounded-[24px] border border-purple-100 p-6 text-center">
-             <h3 className="font-bold text-purple-900 mb-2">Why tracking helps</h3>
-             <p className="text-sm text-purple-700 leading-relaxed">
-               Acknowledging progress builds momentum. Remember that a relapse is not a failure, but an opportunity to learn and grow stronger.
+          <div className="bg-pink-50 rounded-[24px] border border-pink-100 p-6 text-center">
+             <h3 className="font-bold text-pink-900 mb-2">Why detox helps</h3>
+             <p className="text-sm text-pink-700 leading-relaxed">
+               Lowering baseline dopamine levels helps you find joy in difficult tasks like reading, working, and exercising. A relapse is just a bump in the road.
              </p>
           </div>
         </div>
@@ -296,43 +290,40 @@ const StreakTracker = () => {
                 <AlertTriangle size={32} />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Record Relapse</h2>
-              <p className="text-gray-600">Be honest with yourself. This is part of the journey.</p>
+              <p className="text-gray-600">Be honest with yourself to improve.</p>
             </div>
             
             <div className="p-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Which app triggered it?</label>
+              <select 
+                value={relapseApp}
+                onChange={(e) => setRelapseApp(e.target.value)}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#E4405F] mb-4 text-sm"
+              >
+                <option value="">Select App (Optional)</option>
+                <option value="Instagram">Instagram</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Twitter/X">Twitter/X</option>
+                <option value="YouTube">YouTube Shorts / YouTube</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Reddit">Reddit</option>
+                <option value="Other">Other</option>
+              </select>
+
               <label className="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
               <textarea 
                 value={relapseNotes}
                 onChange={(e) => setRelapseNotes(e.target.value)}
                 placeholder="What triggered this? How are you feeling?"
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] text-sm mb-4 resize-none"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#E4405F] min-h-[100px] text-sm mb-6 resize-none"
               ></textarea>
-              
-              <div className="flex items-center gap-3 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <input 
-                  type="checkbox" 
-                  id="bathTaken"
-                  checked={bathTaken}
-                  onChange={(e) => setBathTaken(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="bathTaken" className="font-semibold text-gray-700 select-none cursor-pointer">
-                  I have taken a bath
-                </label>
-              </div>
               
               <div className="space-y-3">
                 <button 
-                  onClick={() => handleRelapse(true)}
+                  onClick={handleRelapse}
                   className="w-full py-3.5 bg-[#d93025] hover:bg-[#b3261d] text-white font-bold rounded-xl transition-colors shadow-sm"
                 >
-                  Relapsed With Porn
-                </button>
-                <button 
-                  onClick={() => handleRelapse(false)}
-                  className="w-full py-3.5 bg-[#fbbc04] hover:bg-[#e3a903] text-white font-bold rounded-xl transition-colors shadow-sm text-shadow-sm"
-                >
-                  Relapsed Without Porn
+                  Confirm Relapse
                 </button>
                 <button 
                   onClick={() => setShowRelapseModal(false)}
@@ -349,4 +340,4 @@ const StreakTracker = () => {
   );
 };
 
-export default StreakTracker;
+export default DopamineDetoxTracker;

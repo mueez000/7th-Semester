@@ -286,7 +286,7 @@ const ReadingTracker = () => {
                     </div>
                     {log.duration && (
                       <div className="text-xs text-gray-500 font-medium">
-                        {log.duration} mins
+                        {parseFloat((log.duration / 60).toFixed(1))}h
                       </div>
                     )}
                     <button
