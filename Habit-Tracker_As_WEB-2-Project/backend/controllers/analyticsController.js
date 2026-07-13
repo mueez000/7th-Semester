@@ -2,7 +2,6 @@ import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
 import ExerciseLog from '../models/ExerciseLog.js';
 import TodoTask from '../models/TodoTask.js';
-import DetoxLog from '../models/DetoxLog.js';
 import ReadingLog from '../models/ReadingLog.js';
 import StreakLog from '../models/StreakLog.js';
 
@@ -36,7 +35,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
 
     const normalize = (val) => {
       if (val === true || val === 'true') return 'prayed';
-      if (val === false || val === 'false') return 'none';
+      if (val === false || val === 'false') return 'unprayed';
       return val || 'none';
     };
 
@@ -199,7 +198,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
     }));
 
     // Timing Data for Line Charts
-    const timingData = { work: [], exercise: [], productivity: [], social: [], reading: [], streak: [], detox: [] };
+    const timingData = { work: [], exercise: [], productivity: [], social: [], reading: [], streak: [] };
     
     workSessions.forEach(s => {
       const d = new Date(s.startTime);
@@ -226,9 +225,9 @@ export const getAnalyticsOverview = async (req, res, next) => {
     let elapsedDays = endOfMonth.getDate();
     const now = new Date();
     if (year && month && Number(year) === now.getFullYear() && Number(month) === now.getMonth() + 1) {
-       elapsedDays = now.getDate();
+       elapsedDays = Math.max(1, now.getDate() - 1);
     } else if (!year || !month) {
-       elapsedDays = now.getDate();
+       elapsedDays = Math.max(1, now.getDate() - 1);
     }
     
     const namazMonthlyAvg = elapsedDays > 0 ? (namazData.reduce((acc, curr) => acc + curr.prayers, 0) / (elapsedDays * 5)) * 100 : 0;
@@ -255,29 +254,47 @@ export const getAnalyticsOverview = async (req, res, next) => {
       if (done) { namazStreak++; namazBest = Math.max(namazBest, namazStreak); } else { namazStreak = 0; }
     }
 
-    let allTimeNamazStats = { total: 0, onTime: 0, qaza: 0, missed: 0, onTimePercentage: 0, qazaPercentage: 0, missedPercentage: 0 };
-    if (allNamaz.length > 0) {
-      const firstDate = new Date(allNamaz[0].date);
-      firstDate.setHours(0,0,0,0);
-      const todayDate = new Date();
-      todayDate.setHours(23,59,59,999);
-      const totalDays = Math.max(1, Math.ceil((todayDate - firstDate) / 86400000));
-      allTimeNamazStats.total = totalDays * 5;
+    let allTimeNamazStats = { total: 0, jamat: 0, onTime: 0, qaza: 0, missed: 0, jamatPercentage: 0, onTimePercentage: 0, qazaPercentage: 0, missedPercentage: 0, perPrayer: {} };
+    const prayerNames = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
+    if (namazLogs.length > 0) {
+      allTimeNamazStats.total = 0;
+
+      // Initialize per-prayer stats
+      prayerNames.forEach(name => {
+        allTimeNamazStats.perPrayer[name] = { jamat: 0, prayed: 0, kaza: 0, missed: 0, missedDates: [] };
+      });
       
-      allNamaz.forEach(log => {
-        const prayers = [log.fajr, log.zuhr, log.asr, log.maghrib, log.isha];
-        prayers.forEach(p => {
-          const val = normalize(p);
-          if (val === 'prayed') allTimeNamazStats.onTime++;
-          else if (val === 'kaza') allTimeNamazStats.qaza++;
+      // Build a set of logged dates
+      const loggedDates = new Set(namazLogs.map(log => formatLocalDate(log.date)));
+      
+      namazLogs.forEach(log => {
+        prayerNames.forEach(name => {
+          const val = normalize(log[name]);
+          if (val === 'none') return;
+          
+          allTimeNamazStats.total++;
+          if (val === 'jamat') {
+            allTimeNamazStats.jamat++;
+            allTimeNamazStats.perPrayer[name].jamat++;
+          } else if (val === 'prayed') {
+            allTimeNamazStats.onTime++;
+            allTimeNamazStats.perPrayer[name].prayed++;
+          } else if (val === 'kaza') {
+            allTimeNamazStats.qaza++;
+            allTimeNamazStats.perPrayer[name].kaza++;
+          } else if (val === 'unprayed') {
+            allTimeNamazStats.missed++;
+            allTimeNamazStats.perPrayer[name].missed++;
+            allTimeNamazStats.perPrayer[name].missedDates.push(formatLocalDate(log.date));
+          }
         });
       });
       
-      allTimeNamazStats.missed = allTimeNamazStats.total - allTimeNamazStats.onTime - allTimeNamazStats.qaza;
-      
-      allTimeNamazStats.onTimePercentage = Number(((allTimeNamazStats.onTime / allTimeNamazStats.total) * 100).toFixed(1));
-      allTimeNamazStats.qazaPercentage = Number(((allTimeNamazStats.qaza / allTimeNamazStats.total) * 100).toFixed(1));
-      allTimeNamazStats.missedPercentage = Number(((allTimeNamazStats.missed / allTimeNamazStats.total) * 100).toFixed(1));
+      const tot = allTimeNamazStats.total || 1;
+      allTimeNamazStats.jamatPercentage = Number(((allTimeNamazStats.jamat / tot) * 100).toFixed(1));
+      allTimeNamazStats.onTimePercentage = Number(((allTimeNamazStats.onTime / tot) * 100).toFixed(1));
+      allTimeNamazStats.qazaPercentage = Number(((allTimeNamazStats.qaza / tot) * 100).toFixed(1));
+      allTimeNamazStats.missedPercentage = Number(((allTimeNamazStats.missed / tot) * 100).toFixed(1));
     }
 
     const allWork = await WorkSession.find({ userId: req.userId, endTime: { $ne: null } }).sort({ startTime: 1 });
@@ -434,53 +451,6 @@ export const getAnalyticsOverview = async (req, res, next) => {
 
     monthlyAverages.streak = relapsesThisMonth;
 
-    const detoxLog = await DetoxLog.findOne({ userId: req.userId });
-    const detoxActiveDatesSet = new Set();
-    const detoxRelapsesSet = new Set();
-    const detoxDayNumbers = {};
-    let detoxRelapsesThisMonth = 0;
-
-    if (detoxLog) {
-      const relapses = detoxLog.relapseHistory.map(r => {
-        const d = new Date(r.date);
-        d.setHours(0,0,0,0);
-        return d;
-      });
-      
-      detoxRelapsesThisMonth = detoxLog.relapseHistory.filter(r => new Date(r.date) >= startOfMonth && new Date(r.date) <= endOfMonth).length;
-
-      const createdAt = new Date(detoxLog.createdAt || detoxLog.startTime || Date.now());
-      createdAt.setHours(0, 0, 0, 0);
-      const todayDate = new Date();
-      todayDate.setHours(23, 59, 59, 999);
-
-      let currentDetoxVal = 1;
-      for (let d = new Date(createdAt); d <= todayDate; d.setDate(d.getDate() + 1)) {
-        const dTime = d.getTime();
-        const dateStr = formatLocalDate(d);
-        detoxActiveDatesSet.add(dateStr);
-
-        const isRelapse = relapses.some(r => r.getTime() === dTime);
-        if (isRelapse) {
-          currentDetoxVal = 1;
-        } else {
-          detoxDayNumbers[dateStr] = currentDetoxVal;
-          currentDetoxVal++;
-        }
-      }
-
-      detoxLog.relapseHistory.forEach(r => {
-        if (r.date) {
-           detoxRelapsesSet.add(formatLocalDate(r.date));
-           const dt = new Date(r.date);
-           if (dt >= startOfMonth && dt <= endOfMonth) {
-             timingData.detox.push({ date: formatLocalDate(dt), timeDecimal: Number((dt.getHours() + dt.getMinutes()/60).toFixed(2)), timestamp: dt.getTime() });
-           }
-        }
-      });
-    }
-    
-    monthlyAverages.detox = detoxRelapsesThisMonth;
 
 
     const highestStreaks = {
@@ -490,8 +460,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
       productivity: prodBest,
       reading: readingBest,
       social: socialBest,
-      streak: streakBest,
-      detox: detoxLog ? detoxLog.longestStreak : 0
+      streak: streakBest
     };
 
     res.json({
@@ -523,10 +492,7 @@ export const getAnalyticsOverview = async (req, res, next) => {
           socialMinutes,
           readingPages,
           streakRelapses: Array.from(streakRelapsesSet),
-          streakDayNumbers,
-          detox: Array.from(detoxActiveDatesSet),
-          detoxRelapses: Array.from(detoxRelapsesSet),
-          detoxDayNumbers
+          streakDayNumbers
         }
       }
     });

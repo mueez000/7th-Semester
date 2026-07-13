@@ -25,7 +25,7 @@ const streakLogSchema = new mongoose.Schema({
   },
   targetDays: {
     type: Number,
-    default: 5
+    default: 7
   },
   longestStreak: {
     type: Number, // in days

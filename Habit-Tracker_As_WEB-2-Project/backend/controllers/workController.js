@@ -158,13 +158,30 @@ export const getMonthlyWorkStats = async (req, res, next) => {
       }
     }
 
+    let deepWorkStreak = 0;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0,0,0,0);
+    
+    const recentMap = {};
+    allSessions.forEach(s => {
+      if (s.startTime >= sevenDaysAgo) {
+        const d = formatDate(s.startTime);
+        recentMap[d] = (recentMap[d] || 0) + s.duration;
+      }
+    });
+    for (let duration of Object.values(recentMap)) {
+      if (duration >= 36000) deepWorkStreak++;
+    }
+
     res.json({ 
       success: true, 
       data: {
         avgDaily: Math.round(avgDaily),
         personalBest,
         dailyTotals,
-        currentStreak
+        currentStreak,
+        deepWorkStreak
       }
     });
   } catch (error) {

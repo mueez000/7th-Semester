@@ -19,7 +19,7 @@ export const startStreak = async (req, res, next) => {
         isActive: true,
         currentStreak: 0,
         longestStreak: 0,
-        targetDays: targetDays || 5,
+        targetDays: targetDays || 7,
         relapseHistory: []
       });
     } else {
@@ -56,6 +56,11 @@ export const getStreakStatus = async (req, res, next) => {
       if (durationDays > streak.longestStreak) {
         streak.longestStreak = durationDays;
       }
+      
+      if (!streak.targetDays || streak.targetDays < 7) {
+        streak.targetDays = 7;
+      }
+      
       streak.lastCheckIn = now;
       await streak.save();
     }
@@ -85,13 +90,13 @@ export const relapse = async (req, res, next) => {
     }
 
     let earnedXp = 0;
-    const currentTarget = streak.targetDays || 5;
+    const currentTarget = streak.targetDays || 7;
     
     if (durationDays < currentTarget) {
-      earnedXp = -1000; // Heavy penalty
-      streak.targetDays = 5; // Reset target on penalty relapse
+      earnedXp = -1500; // Heavy penalty
+      streak.targetDays = Math.max(7, currentTarget - 1); // Decrement target on penalty relapse
     } else {
-      earnedXp = 100; // Achieved target, reward XP
+      earnedXp = 500; // Achieved target, reward XP
       streak.targetDays = currentTarget + 1; // Increase target for next time
     }
 

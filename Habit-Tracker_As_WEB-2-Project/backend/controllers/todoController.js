@@ -71,7 +71,13 @@ export const getTasks = async (req, res, next) => {
     let query = { userId: req.userId };
     if (listId) query.listId = listId;
     if (status) query.status = status;
-    if (dueDate) query.dueDate = dueDate;
+    if (dueDate) {
+      const d = new Date(dueDate);
+      query.dueDate = {
+        $gte: new Date(d.setHours(0, 0, 0, 0)),
+        $lte: new Date(d.setHours(23, 59, 59, 999))
+      };
+    }
     const tasks = await TodoTask.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: tasks });
   } catch (error) { next(error); }
@@ -107,10 +113,10 @@ export const updateTask = async (req, res, next) => {
     const updated = await TodoTask.findByIdAndUpdate(task._id, req.body, { new: true });
     
     if (req.body.status === 'completed' && task.status !== 'completed') {
-      await awardXP(req.userId, 15, 'todo', task._id);
+      await awardXP(req.userId, 40, 'todo', task._id);
       // Removed progressQuest
     } else if (req.body.status && req.body.status !== 'completed' && task.status === 'completed') {
-      await awardXP(req.userId, -15, 'todo_undo', task._id);
+      await awardXP(req.userId, -40, 'todo_undo', task._id);
     }
     
     res.json({ success: true, data: updated });
@@ -126,7 +132,7 @@ export const deleteTask = async (req, res, next) => {
     await WorkSession.updateMany({ taskId: task._id }, { $unset: { taskId: "" } });
     
     if (task.status === 'completed') {
-      await awardXP(req.userId, -15, 'todo_undo', task._id);
+      await awardXP(req.userId, -40, 'todo_undo', task._id);
     }
     
     await TodoTask.findByIdAndDelete(task._id);
@@ -151,7 +157,7 @@ export const completeTask = async (req, res, next) => {
     const updated = await TodoTask.findByIdAndUpdate(task._id, { status: 'completed', completedAt: new Date() }, { new: true });
     
     if (task.status !== 'completed') {
-      await awardXP(req.userId, 15, 'todo', task._id);
+      await awardXP(req.userId, 40, 'todo', task._id);
       // Removed progressQuest
     }
     

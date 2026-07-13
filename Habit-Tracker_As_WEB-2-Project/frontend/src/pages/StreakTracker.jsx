@@ -17,7 +17,7 @@ const StreakTracker = () => {
   const [relapseNotes, setRelapseNotes] = useState('');
   const [bathTaken, setBathTaken] = useState(false);
   
-  const [initialTarget, setInitialTarget] = useState(5);
+  const [initialTarget, setInitialTarget] = useState(7);
 
   useEffect(() => {
     fetchStreakData();
@@ -171,9 +171,9 @@ const StreakTracker = () => {
 
                 <div className="mt-8 flex flex-col items-center">
                   <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full font-semibold text-sm border border-gray-200 shadow-sm">
-                    Target Goal: {streakData.targetDays || 5} Days
+                    Target Goal: {streakData.targetDays || 7} Days
                   </div>
-                  {elapsed.days >= (streakData.targetDays || 5) ? (
+                  {elapsed.days >= (streakData.targetDays || 7) ? (
                     <p className="text-emerald-600 font-bold text-xs mt-2 uppercase tracking-wide flex items-center">
                        🛡️ Shield Active (No Penalty)
                     </p>
@@ -203,9 +203,12 @@ const StreakTracker = () => {
                   <label className="text-sm font-semibold text-gray-700">Initial Target Goal (Days)</label>
                   <input 
                     type="number" 
-                    min="1" 
+                    min="7" 
                     value={initialTarget} 
-                    onChange={(e) => setInitialTarget(parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 7;
+                      setInitialTarget(Math.max(7, val));
+                    }}
                     className="w-24 text-center p-2 border border-gray-300 rounded-lg outline-none focus:border-[#6b21a8] focus:ring-1 focus:ring-[#6b21a8]" 
                   />
                 </div>

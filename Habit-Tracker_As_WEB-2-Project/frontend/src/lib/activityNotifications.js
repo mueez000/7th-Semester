@@ -18,20 +18,32 @@ const capitalize = (s) =>
 
 const SOURCE_LINKS = {
   namaz: '/namaz',
+  namaz_daily_penalty: '/namaz',
+  deep_work_daily_penalty: '/work',
   work: '/work',
   focus: '/focus',
   exercise: '/exercise',
   todo: '/todo',
   habit: '/dashboard',
+  namaz_early_sleep: '/namaz',
+  early_sleep_weekly: '/namaz',
+  deep_work_weekly: '/work',
+  streak_relapse: '/streak',
 };
 
 const SOURCE_TITLES = {
   namaz: 'Prayer logged',
+  namaz_daily_penalty: '⚠️ Namaz Penalty',
+  deep_work_daily_penalty: '⚠️ Deep Work Penalty',
   work: 'Work session',
   focus: 'Focus session',
   exercise: 'Workout logged',
   todo: 'Task progress',
   habit: 'Habit completed',
+  namaz_early_sleep: 'Early Sleep',
+  early_sleep_weekly: 'Weekly Early Sleep Reward',
+  deep_work_weekly: 'Weekly Deep Work Reward',
+  streak_relapse: 'Streak',
 };
 
 /**
@@ -50,6 +62,12 @@ export function buildXpHistoryNotification(row) {
         ? `${sign}${row.amount} XP · ${capitalize(String(row.sourceId))} marked.`
         : `${sign}${row.amount} XP · Prayer logged.`;
       break;
+    case 'namaz_daily_penalty':
+      body = `${row.amount} XP · You missed Isha Jamat or didn't sleep early yesterday. Avoid this penalty by praying in Jamat and sleeping early.`;
+      break;
+    case 'deep_work_daily_penalty':
+      body = `${row.amount} XP · You didn't complete 1 hour of deep work yesterday. Study at least 1 hour daily to avoid this penalty.`;
+      break;
     case 'work':
       body = `${sign}${row.amount} XP · Deep work session saved.`;
       break;
@@ -64,6 +82,18 @@ export function buildXpHistoryNotification(row) {
       break;
     case 'habit':
       body = `${sign}${row.amount} XP · Custom habit checked off.`;
+      break;
+    case 'namaz_early_sleep':
+      body = `${sign}${row.amount} XP · You promised to sleep early.`;
+      break;
+    case 'early_sleep_weekly':
+      body = `🎉 ${sign}${row.amount} XP · You slept early for 7 consecutive days! Incredible discipline!`;
+      break;
+    case 'deep_work_weekly':
+      body = `🎉 ${sign}${row.amount} XP · You logged 10+ hours daily for a week! What a machine!`;
+      break;
+    case 'streak_relapse':
+      body = row.amount < 0 ? `${row.amount} XP · Relapse penalty. Keep trying!` : `+${row.amount} XP · Streak goal achieved!`;
       break;
     default:
       body = `${sign}${row.amount} XP · Keep building your streak.`;

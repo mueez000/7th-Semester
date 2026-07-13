@@ -13,7 +13,8 @@ export const getTodayNamaz = async (req, res, next) => {
     
     const normalize = (val) => {
       if (val === true || val === 'true') return 'prayed';
-      if (val === false || val === 'false') return 'none';
+      if (val === false || val === 'false') return 'unprayed';
+      if (val === 'none') return 'none';
       return val || 'none';
     };
     
@@ -41,7 +42,8 @@ export const logNamaz = async (req, res, next) => {
     
     const normalize = (val) => {
       if (val === true || val === 'true') return 'prayed';
-      if (val === false || val === 'false') return 'none';
+      if (val === false || val === 'false') return 'unprayed';
+      if (val === 'none') return 'none';
       return val || 'none';
     };
 
@@ -58,9 +60,10 @@ export const logNamaz = async (req, res, next) => {
     );
     
     const getXpForStatus = (s) => {
+      if (s === 'jamat') return 40;
       if (s === 'prayed') return 20;
       if (s === 'kaza') return 10;
-      return 0; // 'none'
+      return 0; // 'none' or 'unprayed'
     };
     
     const xpDiff = getXpForStatus(status) - getXpForStatus(previousStatus);
@@ -71,7 +74,7 @@ export const logNamaz = async (req, res, next) => {
       await awardXP(req.userId, xpDiff, 'namaz_undo', prayer);
     }
     
-    if ((status === 'prayed' || status === 'kaza') && previousStatus === 'none') {
+    if ((status === 'jamat' || status === 'prayed' || status === 'kaza') && previousStatus === 'none') {
       // Removed progressQuest
     }
 
@@ -81,6 +84,34 @@ export const logNamaz = async (req, res, next) => {
     });
 
     res.json({ success: true, data: normalizedLog });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logSleptEarly = async (req, res, next) => {
+  try {
+    const { sleptEarly } = req.body;
+    const today = new Date().setHours(0,0,0,0);
+    
+    const existingLog = await NamazLog.findOne({ userId: req.userId, date: today });
+    const wasSleptEarly = existingLog ? existingLog.sleptEarlyAfterIsha : false;
+
+    const log = await NamazLog.findOneAndUpdate(
+      { userId: req.userId, date: today },
+      { $set: { sleptEarlyAfterIsha: sleptEarly } },
+      { new: true, upsert: true }
+    );
+    
+    if (wasSleptEarly !== sleptEarly) {
+      if (sleptEarly) {
+        await awardXP(req.userId, 40, 'namaz_early_sleep', log._id);
+      } else {
+        await awardXP(req.userId, -40, 'namaz_early_sleep_undo', log._id);
+      }
+    }
+    
+    res.json({ success: true, data: log });
   } catch (error) {
     next(error);
   }
@@ -101,17 +132,18 @@ export const getMonthlyNamazStats = async (req, res, next) => {
 
     const normalize = (val) => {
       if (val === true || val === 'true') return 'prayed';
-      if (val === false || val === 'false') return 'none';
+      if (val === false || val === 'false') return 'unprayed';
       return val || 'none';
     };
 
     logs.forEach(log => {
       let dailyCount = 0;
-      if (normalize(log.fajr) !== 'none') dailyCount++;
-      if (normalize(log.zuhr) !== 'none') dailyCount++;
-      if (normalize(log.asr) !== 'none') dailyCount++;
-      if (normalize(log.maghrib) !== 'none') dailyCount++;
-      if (normalize(log.isha) !== 'none') dailyCount++;
+      const validStates = ['prayed', 'jamat', 'kaza'];
+      if (validStates.includes(normalize(log.fajr))) dailyCount++;
+      if (validStates.includes(normalize(log.zuhr))) dailyCount++;
+      if (validStates.includes(normalize(log.asr))) dailyCount++;
+      if (validStates.includes(normalize(log.maghrib))) dailyCount++;
+      if (validStates.includes(normalize(log.isha))) dailyCount++;
       
       totalPrayersCompleted += dailyCount;
       
@@ -126,11 +158,22 @@ export const getMonthlyNamazStats = async (req, res, next) => {
       }
     });
 
+    let earlySleepStreak = 0;
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0,0,0,0);
+    
+    const last7Logs = logs.filter(log => log.date >= sevenDaysAgo);
+    last7Logs.forEach(log => {
+       if (log.sleptEarlyAfterIsha) earlySleepStreak++;
+    });
+
     res.json({ 
       success: true, 
       data: {
         totalCompleted: totalPrayersCompleted,
-        fullDaysStreak: currentStreakDays
+        fullDaysStreak: currentStreakDays,
+        earlySleepStreak
       } 
     });
   } catch (error) {

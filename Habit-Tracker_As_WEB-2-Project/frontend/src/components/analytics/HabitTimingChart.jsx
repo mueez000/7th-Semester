@@ -11,8 +11,7 @@ const HabitTimingChart = ({ timingData }) => {
     exercise: { title: 'Exercise', icon: <Activity size={16} />, color: '#e37400' },
     productivity: { title: 'Tasks', icon: <CheckCircle size={16} />, color: '#fbbc04' },
     reading: { title: 'Reading', icon: <BookOpen size={16} />, color: '#b45309' },
-    streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' },
-    detox: { title: 'Detox Relapse', icon: <Activity size={16} />, color: '#1a73e8' }
+    streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' }
   };
 
   const { title, icon, color } = options[activeHabit];
@@ -133,7 +132,6 @@ const HabitTimingChart = ({ timingData }) => {
                <option value="exercise">Exercise Timing</option>
                <option value="reading">Reading Timing</option>
                <option value="work">Deep Work Timing</option>
-               <option value="detox">Detox Relapse Timing</option>
                <option value="streak">Relapse Timing</option>
              </select>
           </div>

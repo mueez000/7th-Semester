@@ -53,6 +53,18 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (!wasHydrated) {
+          let storedLastXpDate = localStorage.getItem('lastXpDate');
+          if (storedLastXpDate) {
+            const lastDate = new Date(storedLastXpDate);
+            const newRows = history.filter(h => new Date(h.date) > lastDate);
+            [...newRows].reverse().forEach((h) => {
+              emitActivityNotification(buildXpHistoryNotification(h));
+            });
+          }
+          if (history.length > 0) {
+            localStorage.setItem('lastXpDate', history[0].date);
+          }
+          
           history.forEach((h) => seenXpHistoryIdsRef.current.add(h._id));
           badges.forEach((b) => seenBadgeIdsRef.current.add(b._id));
         } else {
@@ -63,6 +75,10 @@ export const AuthProvider = ({ children }) => {
             seenXpHistoryIdsRef.current.add(h._id);
             emitActivityNotification(buildXpHistoryNotification(h));
           });
+          
+          if (history.length > 0) {
+            localStorage.setItem('lastXpDate', history[0].date);
+          }
 
           const newBadges = badges.filter(
             (b) => !seenBadgeIdsRef.current.has(b._id)

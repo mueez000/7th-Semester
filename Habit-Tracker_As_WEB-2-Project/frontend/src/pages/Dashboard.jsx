@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Moon, Clock, Activity, ArrowRight, CheckSquare, Play, Brain, Shield, BookOpen, Target } from 'lucide-react';
+import { Moon, Clock, Activity, ArrowRight, CheckSquare, Play, Shield, BookOpen, Target } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import XPProgress from '../components/gamification/XPProgress';
 import api from '../services/api'; 
@@ -13,7 +13,6 @@ const Dashboard = () => {
     namaz: 0,
     workHours: 0,
     exerciseCal: 0,
-    socialMins: 0,
     streakDays: 0,
     readingPages: 0
   });
@@ -23,12 +22,11 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardSummary = async () => {
       try {
-        const [namazRes, workRes, exerciseRes, tasksRes, socialRes, streakRes, readingRes] = await Promise.all([
+        const [namazRes, workRes, exerciseRes, tasksRes, streakRes, readingRes] = await Promise.all([
           api.get('/namaz/today'),
           api.get('/work/today'),
           api.get('/exercise/today'),
           api.get(`/todo/tasks?dueDate=${new Date().toISOString().split('T')[0]}`),
-          api.get('/detox/status'),
           api.get('/streak/status'),
           api.get('/reading/today')
         ]);
@@ -36,7 +34,6 @@ const Dashboard = () => {
         let computedNamaz = 0;
         let computedWork = 0;
         let computedExercise = 0;
-        let computedSocial = 0;
         let computedStreak = 0;
         let computedReading = 0;
 
@@ -63,10 +60,6 @@ const Dashboard = () => {
            setTodayTasks(tasksRes.data.data.filter(t => t.status !== 'completed' && t.status !== 'archived'));
         }
 
-        if (socialRes.data.success && socialRes.data.data) {
-           computedSocial = socialRes.data.data.currentStreak || 0;
-        }
-
         if (streakRes.data.success && streakRes.data.data) {
            computedStreak = streakRes.data.data.currentStreak || 0;
         }
@@ -79,7 +72,6 @@ const Dashboard = () => {
           namaz: computedNamaz,
           workHours: computedWork,
           exerciseCal: computedExercise,
-          socialMins: computedSocial,
           streakDays: computedStreak,
           readingPages: computedReading
         });
@@ -169,22 +161,6 @@ const Dashboard = () => {
           </div>
         </Link>
 
-        {/* Detox Card */}
-        <Link to="/detox" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#E4405F]">
-          <div className="bg-[#E4405F] p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-4">
-              <Brain size={24} className="text-white" />
-            </div>
-            <h3 className="text-lg font-semibold opacity-90">Dopamine Detox</h3>
-            <div className="mt-2 flex items-baseline gap-2">
-              <p className="text-4xl font-bold">{summary.socialMins}</p>
-              <span className="text-sm opacity-80">days clean</span>
-            </div>
-            <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
-              Check Status <ArrowRight size={16} className="ml-1" />
-            </div>
-          </div>
-        </Link>
 
         {/* Streak Card */}
         <Link to="/streak" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#6b21a8]">

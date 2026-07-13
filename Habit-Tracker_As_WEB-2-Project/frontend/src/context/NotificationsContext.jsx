@@ -81,6 +81,10 @@ export const NotificationsProvider = ({ children }) => {
     persist((prev) => prev.map((n) => ({ ...n, read: true })));
   }, [persist]);
 
+  const clearAll = useCallback(() => {
+    persist([]);
+  }, [persist]);
+
   const dismiss = useCallback(
     (id) => {
       persist((prev) => prev.filter((n) => n.id !== id));
@@ -123,9 +127,10 @@ export const NotificationsProvider = ({ children }) => {
       markAsRead,
       markAllAsRead,
       dismiss,
+      clearAll,
       addNotification,
     }),
-    [visibleItems, unreadCount, markAsRead, markAllAsRead, dismiss, addNotification]
+    [visibleItems, unreadCount, markAsRead, markAllAsRead, dismiss, clearAll, addNotification]
   );
 
   return (

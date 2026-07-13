@@ -71,7 +71,7 @@ const typeConfig = {
 const ACTIVITY_TYPES = new Set(['xp', 'badge', 'level', 'level_down', 'achievement']);
 
 const Notifications = () => {
-  const { items, markAsRead, markAllAsRead, dismiss } = useNotifications();
+  const { items, markAsRead, markAllAsRead, dismiss, clearAll } = useNotifications();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
 
@@ -122,16 +122,28 @@ const Notifications = () => {
               </p>
             </div>
           </div>
-          {unreadTotal > 0 && (
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              className="inline-flex items-center justify-center gap-2 self-start sm:self-center px-4 py-2.5 rounded-full text-sm font-semibold text-[#1967d2] bg-[#e8f0fe] hover:bg-[#d2e3fc] transition-colors border border-transparent"
-            >
-              <CheckCheck size={18} />
-              Mark all read
-            </button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-center mt-4 sm:mt-0">
+            {unreadTotal > 0 && (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-[#1967d2] bg-[#e8f0fe] hover:bg-[#d2e3fc] transition-colors border border-transparent"
+              >
+                <CheckCheck size={18} />
+                Mark all read
+              </button>
+            )}
+            {items.length > 0 && (
+              <button
+                type="button"
+                onClick={clearAll}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-[#d93025] bg-[#fce8e6] hover:bg-[#fad2cf] transition-colors border border-transparent"
+              >
+                <Trash2 size={18} />
+                Delete All
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

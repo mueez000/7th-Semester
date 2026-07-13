@@ -20,7 +20,6 @@ import todoRoutes from './routes/todo.js';
 import exportRoutes from './routes/export.js';
 import gamificationRoutes from './routes/gamification.js';
 
-import detoxRoutes from './routes/detoxRoutes.js';
 import readingRoutes from './routes/reading.js';
 
 import path from 'path';
@@ -104,7 +103,6 @@ app.use('/api/namaz', namazRoutes);
 app.use('/api/streak', streakRoutes);
 app.use('/api/rewards', rewardRoutes);
 
-app.use('/api/detox', detoxRoutes);
 app.use('/api/reading', readingRoutes);
 
 app.get('/api/test-users', async (req, res) => {

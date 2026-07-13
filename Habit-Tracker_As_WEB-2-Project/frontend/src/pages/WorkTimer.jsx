@@ -130,6 +130,7 @@ const WorkTimer = () => {
           });
           toast.success('Task marked as completed!');
           fetchTasks(); // refresh task list
+          refreshGamification();
         }
       } catch (e) {
         toast.error('Failed to mark task as done');
@@ -248,9 +249,43 @@ const WorkTimer = () => {
                 </>
               )}
             </button>
-            <p className="text-gray-500 mt-8 font-medium">
-              Today's Total: <span className="text-gray-900 font-bold">{formatDuration(todayTotal + (isRunning ? seconds : 0))}</span>
-            </p>
+            <div className="flex flex-col items-center mt-8">
+              <p className="text-gray-500 font-medium mb-2">
+                Today's Total: <span className="text-gray-900 font-bold">{formatDuration(todayTotal + (isRunning ? seconds : 0))}</span>
+              </p>
+              {(todayTotal + (isRunning ? seconds : 0)) >= 3600 && (
+                <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm">
+                  <Award size={14} className="mr-1" /> 200XP Penalty Waived!
+                </span>
+              )}
+              {(() => {
+                const totalSec = todayTotal + (isRunning ? seconds : 0);
+                const targetSec = 36000; // 10 hours
+                const leftSec = Math.max(0, targetSec - totalSec);
+                const leftHours = (leftSec / 3600).toFixed(1);
+                const streakDays = monthlyStats.deepWorkStreak || 0;
+                
+                if (leftSec > 0) {
+                  return (
+                    <p className="text-xs text-blue-700 font-medium mt-3 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                      {leftHours.replace(/\.0$/, '')} hours left today to hit your 10h target! ({streakDays}/7 days)
+                    </p>
+                  );
+                } else if (streakDays < 7) {
+                  return (
+                    <p className="text-xs text-green-700 font-medium mt-3 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+                      Target hit today! ({streakDays}/7 days for 500 XP)
+                    </p>
+                  );
+                } else {
+                  return (
+                    <p className="text-xs text-purple-700 font-medium mt-3 bg-purple-50 px-4 py-2 rounded-lg border border-purple-200">
+                      Weekly 10h target achieved! 500 XP unlocked!
+                    </p>
+                  );
+                }
+              })()}
+            </div>
             {taskSummary && (
               <div className={`mt-6 p-4 rounded-xl border w-full max-w-sm text-left ${(!taskSummary.estimated || taskSummary.actual <= taskSummary.estimated) ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
                 <h3 className="font-bold text-md mb-1">Task Completed: {taskSummary.title}</h3>

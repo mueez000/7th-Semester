@@ -93,13 +93,6 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       return { className: 'border-amber-600 shadow-sm', style: { backgroundColor: '#ffb300' } };
     }
 
-    if (activeHabit === 'detox') {
-      const isActive = calendarData?.detox?.includes(dateStr);
-      const isRelapse = calendarData?.detoxRelapses?.includes(dateStr);
-      if (!isActive) return emptyStateClass;
-      if (isRelapse) return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#ef5350' } };
-      return { className: 'border-blue-500 shadow-sm', style: { backgroundColor: '#bfdbfe' } };
-    }
 
     if (activeHabit === 'streak') {
       const isActive = calendarData?.streak?.includes(dateStr);
@@ -120,7 +113,6 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (activeHabit === 'productivity') return calendarData?.productivityCounts?.[dateStr] !== undefined;
     if (activeHabit === 'reading') return calendarData?.readingPages?.[dateStr] !== undefined;
     if (activeHabit === 'streak') return calendarData?.streak?.includes(dateStr);
-    if (activeHabit === 'detox') return calendarData?.detox?.includes(dateStr);
     return false;
   };
 
@@ -134,8 +126,6 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (calendarData.reading?.includes(dateStr)) details.push({ icon: <BookOpen size={14}/>, label: 'Reading Logged', color: 'text-amber-600' });
     if (calendarData.streak?.includes(dateStr)) details.push({ icon: <Shield size={14}/>, label: 'Streak Active', color: 'text-purple-600' });
     if (calendarData.streakRelapses?.includes(dateStr)) details.push({ icon: <AlertTriangle size={14}/>, label: 'Streak Relapsed', color: 'text-red-600' });
-    if (calendarData.detox?.includes(dateStr)) details.push({ icon: <Shield size={14}/>, label: 'Detox Active', color: 'text-blue-600' });
-    if (calendarData.detoxRelapses?.includes(dateStr)) details.push({ icon: <AlertTriangle size={14}/>, label: 'Detox Relapsed', color: 'text-red-600' });
     return details;
   };
 
@@ -168,13 +158,6 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       }
       return null;
     }
-    if (activeHabit === 'detox') {
-      if (calendarData?.detoxRelapses?.includes(dateStr)) return 'Relapsed';
-      if (calendarData?.detox?.includes(dateStr)) {
-         return calendarData.detoxDayNumbers?.[dateStr] ? `Day ${calendarData.detoxDayNumbers[dateStr]}` : 'Active';
-      }
-      return null;
-    }
     return null;
   };
 
@@ -194,7 +177,6 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
                <option value="exercise">Exercise Data</option>
                <option value="reading">Reading Data</option>
                <option value="work">Deep Work Data</option>
-               <option value="detox">Dopamine Detox</option>
                <option value="streak">Commitment Streak</option>
              </select>
           </div>

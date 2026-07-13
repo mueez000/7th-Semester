@@ -13,7 +13,8 @@ const userSchema = new mongoose.Schema({
   xp: { type: Number, default: 0 },
   coins: { type: Number, default: 0 },
   shields: { type: Number, default: 0 },
-  xp_to_next_level: { type: Number, default: 100 }
+  xp_to_next_level: { type: Number, default: 100 },
+  lastDailyCheckDate: { type: Date }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
