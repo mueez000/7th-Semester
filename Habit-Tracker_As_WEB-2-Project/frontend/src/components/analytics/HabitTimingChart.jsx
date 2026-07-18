@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Clock, Activity, CheckCircle, BookOpen, Smartphone, Shield } from 'lucide-react';
+import { Clock, CheckCircle, Shield } from 'lucide-react';
 
 const HabitTimingChart = ({ timingData }) => {
   const [view, setView] = useState('M'); // 'W' or 'M'
@@ -8,9 +8,7 @@ const HabitTimingChart = ({ timingData }) => {
 
   const options = {
     work: { title: 'Deep Work', icon: <Clock size={16} />, color: '#1a73e8' },
-    exercise: { title: 'Exercise', icon: <Activity size={16} />, color: '#e37400' },
     productivity: { title: 'Tasks', icon: <CheckCircle size={16} />, color: '#fbbc04' },
-    reading: { title: 'Reading', icon: <BookOpen size={16} />, color: '#b45309' },
     streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' }
   };
 
@@ -40,7 +38,6 @@ const HabitTimingChart = ({ timingData }) => {
 
   let chartData = [];
   if (view === 'M') {
-    // Pre-fill all days of the month (up to today or end of month)
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const allMonthDays = [];
@@ -71,7 +68,6 @@ const HabitTimingChart = ({ timingData }) => {
       timeDecimal: d.count > 0 ? Number((d.sum / d.count).toFixed(2)) : null
     }));
   } else {
-    // Pre-fill last 7 days
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -129,8 +125,6 @@ const HabitTimingChart = ({ timingData }) => {
                className="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-semibold text-[#5f6368] hover:border-gray-300 focus:outline-none focus:border-[#1a73e8] transition"
              >
                <option value="productivity">Tasks Timing</option>
-               <option value="exercise">Exercise Timing</option>
-               <option value="reading">Reading Timing</option>
                <option value="work">Deep Work Timing</option>
                <option value="streak">Relapse Timing</option>
              </select>

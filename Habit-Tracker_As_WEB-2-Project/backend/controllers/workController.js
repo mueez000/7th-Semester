@@ -1,5 +1,5 @@
 import WorkSession from '../models/WorkSession.js';
-import { awardXP } from '../services/gamification.js';
+
 
 
 export const startWorkSession = async (req, res, next) => {
@@ -47,7 +47,7 @@ export const stopWorkSession = async (req, res, next) => {
     if (session.duration > 0) {
       const minutes = Math.floor(session.duration / 60);
       const xpAmount = Math.max(5, minutes * 1); // Minimum 5 XP, 1 XP per minute
-      await awardXP(req.userId, xpAmount, 'work', session._id);
+
       // Removed progressQuest
     }
 
@@ -89,7 +89,7 @@ export const deleteWorkSession = async (req, res, next) => {
     
     // Only deduct XP if duration > 0 (meaning it was completed and XP was awarded)
     if (session.duration > 0) {
-      await awardXP(req.userId, -xpAmount, 'work_undo', id);
+
     }
 
     res.json({ success: true });
@@ -184,6 +184,25 @@ export const getMonthlyWorkStats = async (req, res, next) => {
         deepWorkStreak
       }
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rateSessionQuality = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { focusQuality } = req.body;
+    if (!focusQuality || focusQuality < 1 || focusQuality > 5) {
+      return res.status(400).json({ success: false, error: 'focusQuality must be 1-5' });
+    }
+    const session = await WorkSession.findOneAndUpdate(
+      { _id: id, userId: req.userId },
+      { focusQuality: parseInt(focusQuality) },
+      { new: true }
+    );
+    if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+    res.json({ success: true, data: session });
   } catch (error) {
     next(error);
   }

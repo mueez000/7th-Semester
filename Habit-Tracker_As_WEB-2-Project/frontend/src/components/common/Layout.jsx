@@ -1,16 +1,11 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
-import LevelUpModal from '../gamification/LevelUpModal';
-import LevelDownModal from '../gamification/LevelDownModal';
-import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
 import TodoNotificationManager from './TodoNotificationManager';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { levelQueue, closeGamificationModal } = useAuth();
-  const currentModal = levelQueue && levelQueue.length > 0 ? levelQueue[0] : null;
 
   return (
     <div className="flex h-screen bg-[#f8f9fa] overflow-hidden">
@@ -23,18 +18,7 @@ const Layout = () => {
           <Outlet />
         </main>
 
-        <div className="relative z-[9999]">
-        <LevelUpModal 
-          level={currentModal?.level} 
-          isOpen={currentModal?.type === 'up'} 
-          onClose={closeGamificationModal} 
-        />
-        <LevelDownModal
-          level={currentModal?.level}
-          isOpen={currentModal?.type === 'down'}
-          onClose={closeGamificationModal}
-        />
-      </div>  <TodoNotificationManager />
+        <TodoNotificationManager />
       </div>
     </div>
   );

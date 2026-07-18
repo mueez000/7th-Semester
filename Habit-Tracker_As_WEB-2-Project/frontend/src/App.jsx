@@ -10,12 +10,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 
-import NamazTracker from './pages/NamazTracker';
 import WorkTimer from './pages/WorkTimer';
-import ExerciseTracker from './pages/ExerciseTracker';
-
 import StreakTracker from './pages/StreakTracker';
-import ReadingTracker from './pages/ReadingTracker';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
@@ -44,13 +40,8 @@ const AnimatedRoutes = () => {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
           <Route path="todo" element={<PageTransition><TodoPage /></PageTransition>} />
-
-          <Route path="namaz" element={<PageTransition><NamazTracker /></PageTransition>} />
           <Route path="work" element={<PageTransition><WorkTimer /></PageTransition>} />
-          <Route path="exercise" element={<PageTransition><ExerciseTracker /></PageTransition>} />
-
           <Route path="streak" element={<PageTransition><StreakTracker /></PageTransition>} />
-          <Route path="reading" element={<PageTransition><ReadingTracker /></PageTransition>} />
           <Route path="analytics" element={<PageTransition><Analytics /></PageTransition>} />
           <Route path="notifications" element={<PageTransition><Notifications /></PageTransition>} />
           <Route path="profile" element={<PageTransition><Profile /></PageTransition>} />

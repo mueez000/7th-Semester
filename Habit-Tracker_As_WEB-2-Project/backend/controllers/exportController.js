@@ -1,10 +1,6 @@
-import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
-import ExerciseLog from '../models/ExerciseLog.js';
-
 import TodoTask from '../models/TodoTask.js';
 import User from '../models/User.js';
-import ReadingLog from '../models/ReadingLog.js';
 
 export const getAllUserData = async (req, res, next) => {
   try {
@@ -13,31 +9,18 @@ export const getAllUserData = async (req, res, next) => {
     // 1. User Summary
     const user = await User.findById(userId).select('-password');
     
-    // 2. Namaz
-    const namazLogs = await NamazLog.find({ userId }).sort({ date: 1 });
-    
-    // 3. Work & Focus
+    // 2. Work Sessions
     const workSessions = await WorkSession.find({ userId });
 
-    
-    // 4. Exercise
-    const exerciseLogs = await ExerciseLog.find({ userId });
-    
-    // 5. Todo Tasks
+    // 3. Todo Tasks
     const todoTasks = await TodoTask.find({ userId });
-
-    // 6. Reading Logs
-    const readingLogs = await ReadingLog.find({ userId });
 
     res.json({
       success: true,
       data: {
         user,
-        namazLogs,
         workSessions,
-        exerciseLogs,
         todoTasks,
-        readingLogs
       }
     });
 

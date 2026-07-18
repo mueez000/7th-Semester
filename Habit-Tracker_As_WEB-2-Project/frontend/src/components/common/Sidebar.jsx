@@ -4,19 +4,13 @@ import { useNotifications } from '../../context/NotificationsContext';
 import { 
   LayoutDashboard, 
   Clock,
-  Activity, 
   BarChart2, 
   User, 
   LogOut,
-  Moon,
   CheckSquare,
   X,
   Bell,
-  Brain,
   Shield,
-  BookOpen,
-  ShoppingBag,
-  Target
 } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 
@@ -27,13 +21,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'To-Do', path: '/todo', icon: CheckSquare },
-    { name: 'Namaz', path: '/namaz', icon: Moon },
-    { name: 'Exercise', path: '/exercise', icon: Activity },
-    { name: 'Reading', path: '/reading', icon: BookOpen },
     { name: 'Work Timer', path: '/work', icon: Clock },
-
     { name: 'Streak', path: '/streak', icon: Shield },
-    
     { name: 'Analytics', path: '/analytics', icon: BarChart2 },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Profile', path: '/profile', icon: User },

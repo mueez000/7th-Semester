@@ -1,14 +1,9 @@
 import express from 'express';
 import { check } from 'express-validator';
 import User from '../models/User.js';
-import NamazLog from '../models/NamazLog.js';
 import WorkSession from '../models/WorkSession.js';
-
-import ExerciseLog from '../models/ExerciseLog.js';
 import TodoTask from '../models/TodoTask.js';
 import TodoList from '../models/TodoList.js';
-import XpHistory from '../models/XpHistory.js';
-import Badge from '../models/Badge.js';
 import bcrypt from 'bcryptjs';
 import { requireAuth } from '../middleware/auth.js';
 import { handleValidationErrors } from '../middleware/validation.js';
@@ -91,14 +86,9 @@ router.delete('/account', [
 
     // Delete all associated user data
     await Promise.all([
-      NamazLog.deleteMany({ userId: req.userId }),
       WorkSession.deleteMany({ userId: req.userId }),
-
-      ExerciseLog.deleteMany({ userId: req.userId }),
       TodoTask.deleteMany({ userId: req.userId }),
       TodoList.deleteMany({ userId: req.userId }),
-      XpHistory.deleteMany({ userId: req.userId }),
-      Badge.deleteMany({ userId: req.userId }),
       User.findByIdAndDelete(req.userId)
     ]);
     

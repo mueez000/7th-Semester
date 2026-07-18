@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Play, Square, Clock, Calendar as CalendarIcon, Award, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTimer } from '../context/TimerContext';
+import { useNotifications } from '../context/NotificationsContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const WorkTimer = () => {
-  const { refreshGamification } = useAuth();
   const { timers, startTimer, stopTimer } = useTimer();
+  const { addNotification } = useNotifications();
   const { isRunning, elapsed: seconds, activeTask } = timers.work;
 
   const [sessions, setSessions] = useState([]);
@@ -20,6 +21,9 @@ const WorkTimer = () => {
   const [showTaskCompletionModal, setShowTaskCompletionModal] = useState(false);
   const [stoppedTaskDetails, setStoppedTaskDetails] = useState(null);
   const [taskSummary, setTaskSummary] = useState(null);
+  const [showQualityModal, setShowQualityModal] = useState(false);
+  const [stoppedSessionId, setStoppedSessionId] = useState(null);
+  const [hoveredStar, setHoveredStar] = useState(0);
 
   const [todayTotal, setTodayTotal] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState({
@@ -71,6 +75,19 @@ const WorkTimer = () => {
     }
   };
 
+  const handleSessionSavedNotifications = (duration, isTaskCompletion = false) => {
+    const newTotal = todayTotal + duration;
+    if (newTotal >= 36000 && todayTotal < 36000 && (monthlyStats.deepWorkStreak || 0) === 6) {
+        toast.success('70 HOURS ACHIEVED! Elon Musk mode unlocked! 🚀');
+        addNotification({ title: 'Elon Musk Level Work Ethic 🚀', description: 'You have worked 10 hours daily for a full week (70 hours). "Nobody ever changed the world on 40 hours a week." - Elon Musk', type: 'achievement', link: '/work' });
+    } else if (!isTaskCompletion) {
+        toast.success(`Session saved: ${formatTime(duration)}`);
+        addNotification({ title: 'Work Session Saved', description: `Completed ${formatTime(duration)} of deep work.`, type: 'work', link: '/work' });
+    } else {
+        addNotification({ title: 'Work Session Saved', description: `Completed ${formatTime(duration)} of deep work.`, type: 'work', link: '/work' });
+    }
+  };
+
   const toggleTimer = async () => {
     if (isRunning) {
       // Stop and save
@@ -78,15 +95,19 @@ const WorkTimer = () => {
         const res = await api.post('/work/stop');
         if (res.data.success) {
           const finalSeconds = stopTimer('work');
+          const sessionId = res.data.data?._id;
+          setStoppedSessionId(sessionId);
           if (activeTask) {
              setStoppedTaskDetails({ task: activeTask, duration: finalSeconds });
              setShowTaskCompletionModal(true);
           } else {
-             toast.success(`Session saved: ${formatTime(finalSeconds)}`);
+             handleSessionSavedNotifications(finalSeconds, false);
           }
+          // Show quality rating modal
+          setShowQualityModal(true);
           // Refresh data immediately
           fetchWorkData();
-          refreshGamification();
+
         }
       } catch (error) {
         toast.error('Failed to stop session properly.');
@@ -129,16 +150,30 @@ const WorkTimer = () => {
             estimated: updatedTask.estimatedTime
           });
           toast.success('Task marked as completed!');
+          addNotification({ title: 'Task Completed', description: `Finished ${task.title}`, type: 'todo', link: '/todo' });
           fetchTasks(); // refresh task list
-          refreshGamification();
+          handleSessionSavedNotifications(duration, true);
+
         }
       } catch (e) {
         toast.error('Failed to mark task as done');
       }
     } else {
-      toast.success(`Session saved: ${formatTime(duration)}`);
+      handleSessionSavedNotifications(duration, false);
     }
     setStoppedTaskDetails(null);
+  };
+
+  const submitQuality = async (stars) => {
+    setShowQualityModal(false);
+    if (!stoppedSessionId || !stars) return;
+    try {
+      await api.patch(`/work/session/${stoppedSessionId}/quality`, { focusQuality: stars });
+      addNotification({ title: 'Focus Quality Rated', description: `Session rated ${stars}⭐ — great self-awareness!`, type: 'work', link: '/analytics' });
+    } catch (e) {
+      console.error('Failed to rate quality', e);
+    }
+    setStoppedSessionId(null);
   };
 
   const formatTime = (totalSeconds) => {
@@ -163,8 +198,9 @@ const WorkTimer = () => {
     try {
       await api.delete(`/work/session/${sessionId}`);
       toast.success('Session removed');
+      addNotification({ title: 'Session Deleted', description: 'A work session was removed.', type: 'system' });
       await fetchWorkData();
-      refreshGamification();
+
     } catch (err) {
       toast.error('Failed to delete session');
     } finally {
@@ -253,11 +289,7 @@ const WorkTimer = () => {
               <p className="text-gray-500 font-medium mb-2">
                 Today's Total: <span className="text-gray-900 font-bold">{formatDuration(todayTotal + (isRunning ? seconds : 0))}</span>
               </p>
-              {(todayTotal + (isRunning ? seconds : 0)) >= 3600 && (
-                <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm">
-                  <Award size={14} className="mr-1" /> 200XP Penalty Waived!
-                </span>
-              )}
+
               {(() => {
                 const totalSec = todayTotal + (isRunning ? seconds : 0);
                 const targetSec = 36000; // 10 hours
@@ -274,13 +306,13 @@ const WorkTimer = () => {
                 } else if (streakDays < 7) {
                   return (
                     <p className="text-xs text-green-700 font-medium mt-3 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
-                      Target hit today! ({streakDays}/7 days for 500 XP)
+                      Target hit today! ({streakDays}/7 days)
                     </p>
                   );
                 } else {
                   return (
                     <p className="text-xs text-purple-700 font-medium mt-3 bg-purple-50 px-4 py-2 rounded-lg border border-purple-200">
-                      Weekly 10h target achieved! 500 XP unlocked!
+                      Weekly 10h target achieved!
                     </p>
                   );
                 }
@@ -391,6 +423,43 @@ const WorkTimer = () => {
                 No, Just Save Time
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showQualityModal && !showTaskCompletionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 text-center">
+            <div className="text-4xl mb-3">🧠</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">How was your focus?</h2>
+            <p className="text-gray-500 text-sm mb-6">Rate your concentration during this session</p>
+            <div className="flex justify-center gap-3 mb-6">
+              {[1,2,3,4,5].map(star => (
+                <button
+                  key={star}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  onClick={() => submitQuality(star)}
+                  className="text-4xl transition-transform hover:scale-125 active:scale-110"
+                >
+                  {star <= hoveredStar ? '⭐' : '☆'}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-gray-400 mb-4">
+              {hoveredStar === 1 && '😵 Very distracted'}
+              {hoveredStar === 2 && '😕 Somewhat distracted'}
+              {hoveredStar === 3 && '😐 Moderate focus'}
+              {hoveredStar === 4 && '😊 Good focus'}
+              {hoveredStar === 5 && '🔥 Deep, unbroken focus!'}
+              {hoveredStar === 0 && 'Hover over a star to rate'}
+            </div>
+            <button
+              onClick={() => { setShowQualityModal(false); setStoppedSessionId(null); }}
+              className="text-xs text-gray-400 hover:text-gray-600 transition underline"
+            >
+              Skip rating
+            </button>
           </div>
         </div>
       )}

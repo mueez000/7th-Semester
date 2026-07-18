@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Moon, Clock, Activity, ArrowRight, CheckSquare, Play, Shield, BookOpen, Target } from 'lucide-react';
+import { Clock, ArrowRight, CheckSquare, Play, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import XPProgress from '../components/gamification/XPProgress';
 import api from '../services/api'; 
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
-  const { user, gamification } = useAuth();
+  const { user } = useAuth();
   
   const [summary, setSummary] = useState({
-    namaz: 0,
     workHours: 0,
-    exerciseCal: 0,
     streakDays: 0,
-    readingPages: 0
   });
   const [todayTasks, setTodayTasks] = useState([]);
   const navigate = useNavigate();
@@ -22,38 +18,17 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardSummary = async () => {
       try {
-        const [namazRes, workRes, exerciseRes, tasksRes, streakRes, readingRes] = await Promise.all([
-          api.get('/namaz/today'),
+        const [workRes, tasksRes, streakRes] = await Promise.all([
           api.get('/work/today'),
-          api.get('/exercise/today'),
           api.get(`/todo/tasks?dueDate=${new Date().toISOString().split('T')[0]}`),
           api.get('/streak/status'),
-          api.get('/reading/today')
         ]);
 
-        let computedNamaz = 0;
         let computedWork = 0;
-        let computedExercise = 0;
         let computedStreak = 0;
-        let computedReading = 0;
-
-        if (namazRes.data.success && namazRes.data.data) {
-           const d = namazRes.data.data;
-           if (d.fajr !== 'none') computedNamaz++;
-           if (d.zuhr !== 'none') computedNamaz++;
-           if (d.asr !== 'none') computedNamaz++;
-           if (d.maghrib !== 'none') computedNamaz++;
-           if (d.isha !== 'none') computedNamaz++;
-        }
 
         if (workRes.data.success && workRes.data.data) {
            computedWork = Number((workRes.data.data.totalDuration / 3600).toFixed(1));
-        }
-
-
-
-        if (exerciseRes.data.success && exerciseRes.data.data) {
-           computedExercise = exerciseRes.data.data.reduce((acc, curr) => acc + (curr.calories || 0), 0);
         }
 
         if (tasksRes.data.success) {
@@ -64,16 +39,9 @@ const Dashboard = () => {
            computedStreak = streakRes.data.data.currentStreak || 0;
         }
 
-        if (readingRes.data.success && readingRes.data.data) {
-           computedReading = readingRes.data.data.reduce((acc, log) => acc + log.pagesRead, 0);
-        }
-
         setSummary({
-          namaz: computedNamaz,
           workHours: computedWork,
-          exerciseCal: computedExercise,
           streakDays: computedStreak,
-          readingPages: computedReading
         });
 
       } catch (error) {
@@ -94,11 +62,6 @@ const Dashboard = () => {
             Welcome back, <span className="text-[#1a73e8]">{user?.name?.split(' ')[0] || 'User'}</span>! 👋
           </h1>
           <p className="text-[#5f6368] text-lg">Here's your productivity summary for today.</p>
-          <XPProgress 
-            level={gamification.level} 
-            currentXP={gamification.xp} 
-            xpToNext={gamification.xp_to_next_level} 
-          />
         </div>
         <div className="hidden md:flex space-x-2 mt-4 md:mt-0">
           <Link to="/todo" className="btn-primary flex items-center">
@@ -109,23 +72,6 @@ const Dashboard = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Namaz Card */}
-        <Link to="/namaz" className="google-card overflow-hidden group">
-          <div className="bg-gradient-mint p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-4">
-              <Moon size={24} className="text-white" />
-            </div>
-            <h3 className="text-lg font-semibold opacity-90">Namaz</h3>
-            <div className="mt-2 flex items-baseline gap-2">
-              <p className="text-4xl font-bold">{summary.namaz}/5</p>
-              <span className="text-sm opacity-80">Prayed</span>
-            </div>
-            <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
-              Log Prayers <ArrowRight size={16} className="ml-1" />
-            </div>
-          </div>
-        </Link>
-
         {/* Work Card */}
         <Link to="/work" className="google-card overflow-hidden group">
           <div className="bg-gradient-google p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
@@ -142,25 +88,6 @@ const Dashboard = () => {
             </div>
           </div>
         </Link>
-        
-
-        {/* Exercise Card */}
-        <Link to="/exercise" className="google-card overflow-hidden group">
-          <div className="bg-gradient-amber p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-4">
-              <Activity size={24} className="text-white" />
-            </div>
-            <h3 className="text-lg font-semibold opacity-90">Exercise</h3>
-            <div className="mt-2 flex items-baseline gap-2">
-              <p className="text-4xl font-bold">{summary.exerciseCal}</p>
-              <span className="text-sm opacity-80">cal today</span>
-            </div>
-            <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
-              Log Activity <ArrowRight size={16} className="ml-1" />
-            </div>
-          </div>
-        </Link>
-
 
         {/* Streak Card */}
         <Link to="/streak" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#6b21a8]">
@@ -185,19 +112,19 @@ const Dashboard = () => {
           </div>
         </Link>
 
-        {/* Reading Card */}
-        <Link to="/reading" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#b45309]">
-          <div className="bg-[#b45309] p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
+        {/* Todo Card */}
+        <Link to="/todo" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#1a73e8]">
+          <div className="bg-[#1a73e8] p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-4">
-              <BookOpen size={24} className="text-white" />
+              <CheckSquare size={24} className="text-white" />
             </div>
-            <h3 className="text-lg font-semibold opacity-90">Reading</h3>
+            <h3 className="text-lg font-semibold opacity-90">Today's Tasks</h3>
             <div className="mt-2 flex items-baseline gap-2">
-              <p className="text-4xl font-bold">{summary.readingPages}</p>
-              <span className="text-sm opacity-80">pages today</span>
+              <p className="text-4xl font-bold">{todayTasks.length}</p>
+              <span className="text-sm opacity-80">pending</span>
             </div>
             <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
-              Log Reading <ArrowRight size={16} className="ml-1" />
+              View Tasks <ArrowRight size={16} className="ml-1" />
             </div>
           </div>
         </Link>

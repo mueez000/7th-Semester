@@ -9,10 +9,11 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
 
 const TodoPage = () => {
-  const { refreshGamification } = useAuth();
   const navigate = useNavigate();
+  const { addNotification } = useNotifications();
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState('all');
   const [tasks, setTasks] = useState([]);
@@ -90,7 +91,8 @@ const TodoPage = () => {
       setLists(lists.filter(l => l._id !== id));
       if (activeListId === id) setActiveListId('all');
       toast.success('List deleted');
-      refreshGamification();
+      addNotification({ title: 'List Deleted', description: 'A task list was removed.', type: 'system' });
+
     } catch (error) {
       toast.error('Error deleting list');
     }
@@ -113,6 +115,7 @@ const TodoPage = () => {
       const res = await api.post('/todo/tasks', payload);
       if (res.data.success) {
         toast.success('Task created');
+        addNotification({ title: 'Task Created', description: payload.title, type: 'todo', link: '/todo' });
         setShowTaskModal(false);
         setTaskForm({ title: '', description: '', dueDate: '', priority: 'medium', estimatedTime: '' });
         fetchTasks();
@@ -131,7 +134,14 @@ const TodoPage = () => {
     setTasks(tasks.map(t => t._id === task._id ? { ...t, status: newStatus } : t));
     try {
       await api.put(`/todo/tasks/${task._id}`, { status: newStatus });
-      refreshGamification();
+      if (newStatus === 'completed') {
+        toast.success('Task marked as completed');
+        addNotification({ title: 'Task Completed', description: `Finished ${task.title}`, type: 'todo', link: '/todo' });
+      } else {
+        toast.success('Task reopened');
+        addNotification({ title: 'Task Reopened', description: `Reopened ${task.title}`, type: 'todo', link: '/todo' });
+      }
+
     } catch (error) {
       setTasks(tasks.map(t => t._id === task._id ? { ...t, status: task.status } : t));
       toast.error('Failed to update task');
@@ -145,8 +155,9 @@ const TodoPage = () => {
       setTasks(tasks.filter(t => t._id !== id));
       setActiveTask(null);
       toast.success('Task deleted');
+      addNotification({ title: 'Task Deleted', description: 'A task was removed from your list.', type: 'system' });
       fetchLists();
-      refreshGamification();
+
     } catch (error) {
       toast.error('Error deleting task');
     }

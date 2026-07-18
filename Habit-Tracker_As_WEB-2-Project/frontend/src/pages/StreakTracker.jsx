@@ -4,9 +4,10 @@ import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
 
 const StreakTracker = () => {
-  const { refreshGamification } = useAuth();
+  const { addNotification } = useNotifications();
   const [streakData, setStreakData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +82,9 @@ const StreakTracker = () => {
       const res = await api.post('/streak/start', { targetDays: initialTarget });
       if (res.data.success) {
         setStreakData(res.data.data);
-        refreshGamification();
+
         toast.success('Streak started. You got this!');
+        addNotification({ title: 'Streak Started', description: `Target set for ${initialTarget} days!`, type: 'streak_relapse', link: '/streak' });
       }
     } catch (error) {
       toast.error('Failed to start streak');
@@ -95,8 +97,9 @@ const StreakTracker = () => {
       if (res.data.success) {
         setStreakData(res.data.data);
         fetchStreakData(); // refresh history
-        refreshGamification();
+
         toast('Streak reset. Don\'t give up!', { icon: '🔄' });
+        addNotification({ title: 'Streak Reset', description: 'Your streak was reset. Stay strong!', type: 'streak_relapse', link: '/streak' });
         setShowRelapseModal(false);
         setRelapseNotes('');
         setBathTaken(false);
@@ -111,8 +114,9 @@ const StreakTracker = () => {
       const res = await api.delete(`/streak/relapse/${id}`);
       if (res.data.success) {
         toast.success('Relapse history deleted');
+        addNotification({ title: 'History Deleted', description: 'A streak relapse entry was removed.', type: 'system' });
         fetchStreakData();
-        refreshGamification();
+
       }
     } catch (error) {
       toast.error('Failed to delete history');
@@ -175,11 +179,11 @@ const StreakTracker = () => {
                   </div>
                   {elapsed.days >= (streakData.targetDays || 7) ? (
                     <p className="text-emerald-600 font-bold text-xs mt-2 uppercase tracking-wide flex items-center">
-                       🛡️ Shield Active (No Penalty)
+                       🌟 Target Reached
                     </p>
                   ) : (
-                    <p className="text-red-500 font-bold text-xs mt-2 uppercase tracking-wide">
-                       ⚠️ Penalty if relapsed now
+                    <p className="text-blue-500 font-bold text-xs mt-2 uppercase tracking-wide">
+                       Keep pushing
                     </p>
                   )}
                 </div>
@@ -243,11 +247,7 @@ const StreakTracker = () => {
                           {entry.bathTaken !== undefined && (
                             entry.bathTaken ? <span className="text-blue-500 text-xs px-2 py-0.5 bg-blue-50 rounded-full uppercase">Bath Taken</span> : <span className="text-gray-500 text-xs px-2 py-0.5 bg-gray-100 rounded-full uppercase">No Bath</span>
                           )}
-                          {entry.xpEarned !== undefined && (
-                            entry.xpEarned < 0 ? <span className="text-red-600 text-xs font-bold">({entry.xpEarned} XP Penalty)</span> :
-                            entry.xpEarned === 0 ? <span className="text-emerald-600 text-xs font-bold ml-2">(Shield Used)</span> :
-                            <span className="text-green-600 text-xs font-bold">(+{entry.xpEarned} XP)</span>
-                          )}
+
                         </span>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-gray-500 font-medium">
@@ -259,6 +259,17 @@ const StreakTracker = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600">{format(new Date(entry.date), 'MMM d, yyyy - h:mm a')}</p>
+                      
+                      {entry.enduredTime && (
+                        <div className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md py-1 px-2 inline-block">
+                          Endured: {(() => {
+                            const d = Math.floor(entry.enduredTime / (1000 * 60 * 60 * 24));
+                            const h = Math.floor((entry.enduredTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            return `${d} days, ${h} hrs`;
+                          })()} (Target: {entry.previousTargetDays || 7} days)
+                        </div>
+                      )}
+                      
                       {entry.notes && (
                         <p className="mt-3 text-sm text-gray-700 bg-white p-3 rounded-lg border border-gray-100">"{entry.notes}"</p>
                       )}

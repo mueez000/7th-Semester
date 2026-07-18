@@ -1,7 +1,7 @@
 import TodoList from '../models/TodoList.js';
 import TodoTask from '../models/TodoTask.js';
 import WorkSession from '../models/WorkSession.js';
-import { awardXP } from '../services/gamification.js';
+
 
 
 // --- LISTS ---
@@ -113,10 +113,10 @@ export const updateTask = async (req, res, next) => {
     const updated = await TodoTask.findByIdAndUpdate(task._id, req.body, { new: true });
     
     if (req.body.status === 'completed' && task.status !== 'completed') {
-      await awardXP(req.userId, 40, 'todo', task._id);
+
       // Removed progressQuest
     } else if (req.body.status && req.body.status !== 'completed' && task.status === 'completed') {
-      await awardXP(req.userId, -40, 'todo_undo', task._id);
+
     }
     
     res.json({ success: true, data: updated });
@@ -132,7 +132,7 @@ export const deleteTask = async (req, res, next) => {
     await WorkSession.updateMany({ taskId: task._id }, { $unset: { taskId: "" } });
     
     if (task.status === 'completed') {
-      await awardXP(req.userId, -40, 'todo_undo', task._id);
+
     }
     
     await TodoTask.findByIdAndDelete(task._id);
@@ -157,7 +157,7 @@ export const completeTask = async (req, res, next) => {
     const updated = await TodoTask.findByIdAndUpdate(task._id, { status: 'completed', completedAt: new Date() }, { new: true });
     
     if (task.status !== 'completed') {
-      await awardXP(req.userId, 40, 'todo', task._id);
+
       // Removed progressQuest
     }
     

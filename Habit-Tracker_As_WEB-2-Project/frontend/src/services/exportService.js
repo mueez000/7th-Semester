@@ -6,7 +6,7 @@ export const exportAllData = async () => {
     const res = await api.get('/export/all');
     if (!res.data.success) throw new Error('Failed to fetch export data');
     
-    const { user, namazLogs, workSessions, exerciseLogs, todoTasks } = res.data.data;
+    const { user, workSessions, todoTasks } = res.data.data;
 
     const wb = XLSX.utils.book_new();
 
@@ -16,30 +16,14 @@ export const exportAllData = async () => {
       ['Generated On', new Date().toLocaleDateString()],
       ['Name', user.name],
       ['Email', user.email],
-      ['Current Level', user.level],
-      ['Total XP', user.xp],
       [''],
-      ['Total Namaz Logs', namazLogs?.length || 0],
       ['Total Work Sessions', workSessions?.length || 0],
-      ['Total Exercise Logs', exerciseLogs?.length || 0]
+      ['Total Tasks', todoTasks?.length || 0],
     ];
     const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
 
-    // 2. Namaz
-    const namazRows = (namazLogs || []).map(l => ({
-      Date: new Date(l.date).toLocaleDateString(),
-      Fajr: l.fajr ? 'Yes' : 'No',
-      Zuhr: l.zuhr ? 'Yes' : 'No',
-      Asr: l.asr ? 'Yes' : 'No',
-      Maghrib: l.maghrib ? 'Yes' : 'No',
-      Isha: l.isha ? 'Yes' : 'No',
-      Total: [l.fajr, l.zuhr, l.asr, l.maghrib, l.isha].filter(Boolean).length
-    }));
-    const namazWs = XLSX.utils.json_to_sheet(namazRows);
-    XLSX.utils.book_append_sheet(wb, namazWs, 'Namaz');
-
-    // 3. Productivity (Work)
+    // 2. Deep Work
     const workRows = (workSessions || []).map(w => ({
       Type: 'Deep Work',
       Date: new Date(w.startTime).toLocaleDateString(),
@@ -47,9 +31,9 @@ export const exportAllData = async () => {
       TaskId: w.taskId || 'None'
     }));
     const prodWs = XLSX.utils.json_to_sheet(workRows.sort((a,b) => new Date(a.Date) - new Date(b.Date)));
-    XLSX.utils.book_append_sheet(wb, prodWs, 'Productivity');
+    XLSX.utils.book_append_sheet(wb, prodWs, 'Deep Work');
 
-    // 4. Tasks
+    // 3. Tasks
     const taskRows = (todoTasks || []).map(t => ({
       Title: t.title,
       Priority: t.priority,
@@ -61,17 +45,6 @@ export const exportAllData = async () => {
     }));
     const taskWs = XLSX.utils.json_to_sheet(taskRows);
     XLSX.utils.book_append_sheet(wb, taskWs, 'Tasks');
-
-    // 5. Exercise
-    const exerciseRows = (exerciseLogs || []).map(e => ({
-      Date: new Date(e.date).toLocaleDateString(),
-      Activity: e.activityType,
-      DurationMins: e.duration,
-      DistanceKm: e.distance || 0,
-      Calories: e.calories || 0
-    }));
-    const exWs = XLSX.utils.json_to_sheet(exerciseRows);
-    XLSX.utils.book_append_sheet(wb, exWs, 'Exercise');
 
     // Save
     XLSX.writeFile(wb, `HabitFlow_Export_${new Date().toISOString().split('T')[0]}.xlsx`);

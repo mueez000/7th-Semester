@@ -115,7 +115,7 @@ const Notifications = () => {
                 Notifications
               </h1>
               <p className="text-[#5f6368] mt-1 text-sm sm:text-base max-w-xl">
-                XP from prayers, work, focus, exercise, and tasks appears here automatically—along with new badges and level-ups.
+                Reminders, streaks, and activity notifications appear here automatically.
               </p>
               <p className="text-[#80868b] mt-2 text-xs sm:text-sm">
                 Synced when your profile refreshes after each activity.
@@ -127,7 +127,7 @@ const Notifications = () => {
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-[#1967d2] bg-[#e8f0fe] hover:bg-[#d2e3fc] transition-colors border border-transparent"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-[#1a73e8] bg-white border border-blue-100 shadow-sm hover:shadow-md hover:bg-blue-50 transition-all duration-200"
               >
                 <CheckCheck size={18} />
                 Mark all read
@@ -137,7 +137,7 @@ const Notifications = () => {
               <button
                 type="button"
                 onClick={clearAll}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-[#d93025] bg-[#fce8e6] hover:bg-[#fad2cf] transition-colors border border-transparent"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-[#d93025] bg-white border border-red-100 shadow-sm hover:shadow-md hover:bg-red-50 transition-all duration-200"
               >
                 <Trash2 size={18} />
                 Delete All

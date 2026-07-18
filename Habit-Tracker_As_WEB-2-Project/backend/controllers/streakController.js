@@ -1,5 +1,5 @@
 import StreakLog from '../models/StreakLog.js';
-import { awardXP } from '../services/gamification.js';
+
 
 import User from '../models/User.js';
 
@@ -89,16 +89,7 @@ export const relapse = async (req, res, next) => {
       streak.longestStreak = durationDays;
     }
 
-    let earnedXp = 0;
-    const currentTarget = streak.targetDays || 7;
-    
-    if (durationDays < currentTarget) {
-      earnedXp = -1500; // Heavy penalty
-      streak.targetDays = Math.max(7, currentTarget - 1); // Decrement target on penalty relapse
-    } else {
-      earnedXp = 500; // Achieved target, reward XP
-      streak.targetDays = currentTarget + 1; // Increase target for next time
-    }
+
 
     const previousStartTime = streak.startTime;
     const previousTargetDays = streak.targetDays;
@@ -109,8 +100,8 @@ export const relapse = async (req, res, next) => {
       notes: notes || '',
       withPorn: Boolean(withPorn),
       bathTaken: Boolean(bathTaken),
-      xpEarned: earnedXp,
       previousStartTime: previousStartTime,
+      enduredTime: diffTime,
       previousTargetDays: previousTargetDays
     });
 
@@ -120,9 +111,6 @@ export const relapse = async (req, res, next) => {
     
     await streak.save();
 
-    if (earnedXp !== 0) {
-      await awardXP(req.userId, earnedXp, 'streak_relapse', streak._id);
-    }
 
     res.json({ success: true, data: streak });
   } catch (error) {
@@ -163,7 +151,7 @@ export const deleteRelapse = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Relapse entry not found' });
     }
     
-    const xpEarned = relapseEntry.xpEarned || 0;
+
 
     if (relapseEntry.previousStartTime) {
       streak.startTime = relapseEntry.previousStartTime;
@@ -173,9 +161,6 @@ export const deleteRelapse = async (req, res, next) => {
     streak.relapseHistory = streak.relapseHistory.filter(r => r._id.toString() !== relapseId);
     await streak.save();
 
-    if (xpEarned !== 0) {
-      await awardXP(req.userId, -xpEarned, 'streak_relapse_undo', streak._id);
-    }
 
     res.json({ success: true, data: streak });
   } catch (error) {
