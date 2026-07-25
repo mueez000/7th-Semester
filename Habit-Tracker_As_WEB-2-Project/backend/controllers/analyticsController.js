@@ -1,6 +1,7 @@
 import WorkSession from '../models/WorkSession.js';
 import TodoTask from '../models/TodoTask.js';
 import StreakLog from '../models/StreakLog.js';
+import TradeLog from '../models/TradeLog.js';
 
 export const getAnalyticsOverview = async (req, res, next) => {
   try {
@@ -81,8 +82,13 @@ export const getAnalyticsOverview = async (req, res, next) => {
         completed: dailyTasks[day]
     }));
 
-    // 3. Timing Data
-    const timingData = { work: [], productivity: [], streak: [] };
+    // 3. Timing Data & Trades
+    const tradesThisMonth = await TradeLog.find({
+      userId: req.userId,
+      entryDate: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    const timingData = { work: [], productivity: [], streak: [], trades: [] };
     
     workSessions.forEach(s => {
       const d = new Date(s.startTime);
@@ -91,6 +97,18 @@ export const getAnalyticsOverview = async (req, res, next) => {
     tasksCompletedThisMonth.forEach(t => {
       const d = new Date(t.completedAt);
       timingData.productivity.push({ date: formatLocalDate(d), timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+    });
+    
+    const tradeActiveDatesSet = new Set();
+    const tradePnL = {}; // Track total PnL per day for calendar
+    
+    tradesThisMonth.forEach(t => {
+      const d = new Date(t.entryDate);
+      const dateStr = formatLocalDate(d);
+      timingData.trades.push({ date: dateStr, timeDecimal: Number((d.getHours() + d.getMinutes()/60).toFixed(2)), timestamp: d.getTime() });
+      tradeActiveDatesSet.add(dateStr);
+      if (!tradePnL[dateStr]) tradePnL[dateStr] = 0;
+      tradePnL[dateStr] += (t.pnl || 0);
     });
 
     // 4. Monthly Averages
@@ -246,8 +264,10 @@ export const getAnalyticsOverview = async (req, res, next) => {
           work: Array.from(workActiveDatesSet),
           productivity: Array.from(productivityActiveDatesSet),
           streak: Array.from(streakActiveDatesSet),
+          trades: Array.from(tradeActiveDatesSet),
           workMinutes,
           productivityCounts,
+          tradePnL,
           streakRelapses: Array.from(streakRelapsesSet),
           streakDayNumbers
         }
@@ -298,6 +318,21 @@ export const getDailyTimeline = async (req, res, next) => {
       });
     });
 
+    const trades = await TradeLog.find({
+      userId: req.userId,
+      entryDate: { $gte: startOfDay, $lte: endOfDay }
+    });
+    trades.forEach(t => {
+      timeline.push({
+        id: t._id,
+        type: 'Trade',
+        title: `${t.position} ${t.asset}`,
+        time: t.entryDate,
+        duration: 0,
+        color: t.status === 'Win' ? '#22c55e' : t.status === 'Loss' ? '#ef4444' : '#a855f7'
+      });
+    });
+
     timeline.sort((a, b) => a.time - b.time);
 
     res.json({ success: true, data: timeline });
@@ -326,8 +361,14 @@ export const getHeatmapData = async (req, res, next) => {
       completedAt: { $gte: oneYearAgo, $lte: today }
     });
 
+    const trades = await TradeLog.find({
+      userId: req.userId,
+      entryDate: { $gte: oneYearAgo, $lte: today }
+    });
+
     const workData = {};
     const taskData = {};
+    const tradeData = {};
 
     const formatLocalDate = (dateStr) => {
       const d = new Date(dateStr);
@@ -346,11 +387,18 @@ export const getHeatmapData = async (req, res, next) => {
       taskData[dStr] += 1;
     });
 
+    trades.forEach(t => {
+      const dStr = formatLocalDate(t.entryDate);
+      if (!tradeData[dStr]) tradeData[dStr] = 0;
+      tradeData[dStr] += 1; // Count of trades, or could be PnL
+    });
+
     res.json({
       success: true,
       data: {
         work: workData,
-        tasks: taskData
+        tasks: taskData,
+        trades: tradeData
       }
     });
 

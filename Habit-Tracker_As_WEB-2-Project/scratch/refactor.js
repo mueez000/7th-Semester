@@ -1,96 +1,18 @@
-import { useState, useEffect } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { BarChart2, CheckCircle, Download, Clock, Flame, Activity, Shield } from 'lucide-react';
-import api from '../services/api';
-import toast from 'react-hot-toast';
-import HabitCalendar from '../components/analytics/HabitCalendar';
-import HabitTimingChart from '../components/analytics/HabitTimingChart';
-import ContributionHeatmap from '../components/analytics/ContributionHeatmap';
-import TimeOfDayChart from '../components/analytics/TimeOfDayChart';
-import VelocityChart from '../components/analytics/VelocityChart';
-import AIInsights from '../components/analytics/AIInsights';
-import StreakDistributionChart from '../components/analytics/StreakDistributionChart';
-import StreakEnduranceChart from '../components/analytics/StreakEnduranceChart';
-import RelapseTimeChart from '../components/analytics/RelapseTimeChart';
-import GoalTrajectory from '../components/analytics/GoalTrajectory';
-import FocusQualityChart from '../components/analytics/FocusQualityChart';
-import BalanceJourneyChart from '../components/analytics/BalanceJourneyChart';
-import BestHourChart from '../components/analytics/BestHourChart';
-import EmotionHeatmap from '../components/analytics/EmotionHeatmap';
-import RevengeTradeDetector from '../components/analytics/RevengeTradeDetector';
-import { exportAllData } from '../services/exportService';
+const fs = require('fs');
+const path = 'c:/Users/moiah/Desktop/New folder/Habit-Tracker_As_WEB-2-Project/frontend/src/pages/Analytics.jsx';
+let content = fs.readFileSync(path, 'utf8');
 
-const Analytics = () => {
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [loading, setLoading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [activeTab, setActiveTab] = useState('Overview');
-  const TABS = ['Overview', 'Trading', 'Deep Work', 'Productivity', 'Commitment'];
-  const [heatmapData, setHeatmapData] = useState({ work: {}, tasks: {} });
-  const [data, setData] = useState({
-    workData: [],
-    productivityData: [],
-    streakData: [],
-    timingData: { work: [], productivity: [], streak: [] },
-    monthlyAverages: {},
-    highestStreaks: {},
-    calendar: {
-      work: [], productivity: [], streak: [],
-      workMinutes: {}, productivityCounts: {}, streakRelapses: [], streakDayNumbers: {}
-    }
-  });
+// 1. Add state
+content = content.replace(
+  "const [isExporting, setIsExporting] = useState(false);",
+  "const [isExporting, setIsExporting] = useState(false);\n  const [activeTab, setActiveTab] = useState('Overview');\n  const TABS = ['Overview', 'Trading', 'Deep Work', 'Productivity', 'Commitment'];"
+);
 
-  useEffect(() => { fetchAnalytics(selectedMonth); }, [selectedMonth]);
-  useEffect(() => { fetchHeatmap(); }, []);
+// 2. Replace the return statement
+const returnStart = content.indexOf('  return (\n    <div className="space-y-8 pb-10 max-w-7xl mx-auto animate-in fade-in duration-500">');
+if (returnStart === -1) throw new Error("Could not find return statement");
 
-  const fetchAnalytics = async (dateObj) => {
-    try {
-      setLoading(true);
-      const year = dateObj.getFullYear();
-      const month = dateObj.getMonth() + 1;
-      const res = await api.get(`/analytics/overview?year=${year}&month=${month}`);
-      if (res.data.success) setData(res.data.data);
-    } catch (error) {
-      toast.error('Failed to load analytics');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchHeatmap = async () => {
-    try {
-      const res = await api.get('/analytics/heatmap');
-      if (res.data.success) setHeatmapData(res.data.data);
-    } catch (error) {
-      console.error('Heatmap load failed', error);
-    }
-  };
-
-  const handleExport = async () => {
-    setIsExporting(true);
-    const success = await exportAllData();
-    setIsExporting(false);
-    if (success) toast.success('Data exported successfully!');
-    else toast.error('Export failed');
-  };
-
-  const ChartCard = ({ title, icon, color, children }) => (
-    <div className="google-card p-6 w-full animate-in slide-in-from-bottom-4 duration-500">
-      <h3 className="text-lg font-bold text-[#202124] flex items-center mb-5">
-        <span className="mr-2" style={{ color }}>{icon}</span> {title}
-      </h3>
-      <div className="h-44 w-full">{children}</div>
-    </div>
-  );
-
-  const EmptyState = ({ msg }) => (
-    <div className="flex h-full flex-col items-center justify-center text-[#9aa0a6] text-sm">
-      <Activity size={32} className="mb-3 opacity-20" />
-      <p>{msg}</p>
-    </div>
-  );
-
-  return (
+const newReturn = `  return (
     <div className="space-y-8 pb-10 max-w-7xl mx-auto animate-in fade-in duration-500">
 
       {/* 1. Header */}
@@ -114,11 +36,11 @@ const Analytics = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-5 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition-colors ${
+            className={\`px-5 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition-colors \${
               activeTab === tab 
                 ? 'bg-[#e8f0fe] text-[#1967d2] shadow-sm' 
                 : 'text-[#5f6368] hover:bg-gray-50 hover:text-[#202124]'
-            }`}
+            }\`}
           >
             {tab}
           </button>
@@ -135,12 +57,12 @@ const Analytics = () => {
               </h3>
               <div className="space-y-3">
                 {[
-                  { icon: <Clock size={15}/>, label: 'Deep Work', value: `${data.monthlyAverages?.work || 0} hrs/day`, color: 'text-blue-600' },
-                  { icon: <CheckCircle size={15}/>, label: 'Tasks', value: `${data.monthlyAverages?.productivity || 0} /day`, color: 'text-amber-600' },
-                  { icon: <Shield size={15}/>, label: 'Commitment', value: `${data.monthlyAverages?.streak || 0} relapses`, color: 'text-purple-600' },
+                  { icon: <Clock size={15}/>, label: 'Deep Work', value: \`\${data.monthlyAverages?.work || 0} hrs/day\`, color: 'text-blue-600' },
+                  { icon: <CheckCircle size={15}/>, label: 'Tasks', value: \`\${data.monthlyAverages?.productivity || 0} /day\`, color: 'text-amber-600' },
+                  { icon: <Shield size={15}/>, label: 'Commitment', value: \`\${data.monthlyAverages?.streak || 0} relapses\`, color: 'text-purple-600' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-1.5 border-b border-[#e8f0fe] last:border-0">
-                    <span className={`font-medium flex items-center gap-2 text-[#3c4043] ${row.color}`}>{row.icon} {row.label}</span>
+                    <span className={\`font-medium flex items-center gap-2 text-[#3c4043] \${row.color}\`}>{row.icon} {row.label}</span>
                     <span className="font-bold text-[#1a73e8] bg-[#e8f0fe] px-2 py-0.5 rounded text-sm">{row.value}</span>
                   </div>
                 ))}
@@ -157,7 +79,7 @@ const Analytics = () => {
                   { label: 'Tasks', value: data.highestStreaks?.productivity || 0, color: 'bg-[#fff8e1] text-[#b08d00] border-[#ffe082]' },
                   { label: 'Commitment', value: data.highestStreaks?.streak || 0, color: 'bg-purple-50 text-[#6b21a8] border-purple-200 col-span-2 lg:col-span-1', icon: <Shield size={14} className="inline mr-1"/> },
                 ].map(item => (
-                  <div key={item.label} className={`rounded-2xl border p-3 text-center ${item.color} ${item.label === 'Commitment' ? 'py-4' : ''}`}>
+                  <div key={item.label} className={\`rounded-2xl border p-3 text-center \${item.color} \${item.label === 'Commitment' ? 'py-4' : ''}\`}>
                     <p className="text-2xl font-bold">{item.value}</p>
                     <p className="text-xs font-semibold mt-0.5 opacity-80">{item.icon}{item.label}</p>
                     <p className="text-[10px] opacity-60">days</p>
@@ -218,7 +140,6 @@ const Analytics = () => {
           </div>
 
           <AIInsights />
-          <TimeOfDayChart timingData={data.timingData} />
           <HabitTimingChart timingData={data.timingData} />
           <ContributionHeatmap heatmapData={heatmapData} />
           <HabitCalendar selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} calendarData={data.calendar} />
@@ -239,7 +160,7 @@ const Analytics = () => {
       {activeTab === 'Deep Work' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           <FocusQualityChart />
-          <GoalTrajectory selectedMonth={selectedMonth} />
+          <TimeOfDayChart timingData={data.timingData} />
         </div>
       )}
 
@@ -247,6 +168,7 @@ const Analytics = () => {
       {activeTab === 'Productivity' && (
         <div className="space-y-8 animate-in fade-in duration-300">
           <VelocityChart />
+          <GoalTrajectory selectedMonth={selectedMonth} />
         </div>
       )}
 
@@ -263,4 +185,8 @@ const Analytics = () => {
   );
 };
 
-export default Analytics;
+export default Analytics;`;
+
+content = content.substring(0, returnStart) + newReturn;
+fs.writeFileSync(path, content, 'utf8');
+console.log('Successfully refactored Analytics.jsx');

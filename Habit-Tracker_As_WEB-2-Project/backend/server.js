@@ -14,6 +14,8 @@ import workRoutes from './routes/work.js';
 import analyticsRoutes from './routes/analytics.js';
 import todoRoutes from './routes/todo.js';
 import exportRoutes from './routes/export.js';
+import tradeRoutes from './routes/tradeRoutes.js';
+import propAccountRoutes from './routes/propAccountRoutes.js';
 
 import path from 'path';
 
@@ -89,6 +91,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/todo', todoRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/streak', streakRoutes);
+app.use('/api/trades', tradeRoutes);
+app.use('/api/prop-account', propAccountRoutes);
 
 app.get('/api/test-users', async (req, res) => {
   try {

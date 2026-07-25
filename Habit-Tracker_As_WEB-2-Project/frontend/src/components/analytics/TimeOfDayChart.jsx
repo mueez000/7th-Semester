@@ -24,7 +24,11 @@ const TimeOfDayChart = ({ timingData }) => {
   const [mode, setMode] = useState('work'); // 'work' | 'tasks'
 
   const { radarData, hourlyBuckets, peakInsight, periodData, total } = useMemo(() => {
-    const source = mode === 'work' ? (timingData?.work || []) : (timingData?.productivity || []);
+    let source = [];
+    if (mode === 'work') source = timingData?.work || [];
+    else if (mode === 'tasks') source = timingData?.productivity || [];
+    else if (mode === 'trading') source = timingData?.trades || [];
+    else if (mode === 'streak') source = timingData?.streak || [];
     const buckets = Array(24).fill(0);
 
     source.forEach(entry => {
@@ -81,8 +85,8 @@ const TimeOfDayChart = ({ timingData }) => {
     return { radarData, hourlyBuckets: buckets, peakInsight, periodData, total };
   }, [timingData, mode]);
 
-  const color = mode === 'work' ? '#1a73e8' : '#f59e0b';
-  const fillColor = mode === 'work' ? '#1a73e8' : '#f59e0b';
+  const color = mode === 'work' ? '#1a73e8' : mode === 'tasks' ? '#f59e0b' : mode === 'trading' ? '#10b981' : '#ef4444';
+  const fillColor = color;
 
   return (
     <div className="google-card p-6 w-full animate-in slide-in-from-bottom-4 duration-500">
@@ -95,18 +99,30 @@ const TimeOfDayChart = ({ timingData }) => {
           </h3>
           <p className="text-xs text-[#5f6368] mt-1">When are you most productive?</p>
         </div>
-        <div className="flex bg-gray-100 p-1 rounded-lg">
+        <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setMode('work')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${mode === 'work' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-colors ${mode === 'work' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Deep Work
           </button>
           <button
             onClick={() => setMode('tasks')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${mode === 'tasks' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-colors ${mode === 'tasks' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Tasks
+          </button>
+          <button
+            onClick={() => setMode('trading')}
+            className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-colors ${mode === 'trading' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Trading
+          </button>
+          <button
+            onClick={() => setMode('streak')}
+            className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-md transition-colors ${mode === 'streak' ? 'bg-white text-red-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Bad Habits
           </button>
         </div>
       </div>
@@ -114,7 +130,7 @@ const TimeOfDayChart = ({ timingData }) => {
       {total === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-[#9aa0a6]">
           <Brain size={40} className="mb-3 opacity-20" />
-          <p className="text-sm">No {mode === 'work' ? 'work session' : 'task'} data yet.</p>
+          <p className="text-sm">No {mode === 'work' ? 'work session' : mode === 'tasks' ? 'task' : mode === 'trading' ? 'trading' : 'bad habit'} data yet.</p>
           <p className="text-xs mt-1">Start logging to see your productivity pattern!</p>
         </div>
       ) : (
@@ -126,7 +142,7 @@ const TimeOfDayChart = ({ timingData }) => {
                 <PolarGrid stroke="#e8eaed" />
                 <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#5f6368' }} />
                 <Radar
-                  name={mode === 'work' ? 'Sessions' : 'Tasks'}
+                  name={mode === 'work' ? 'Sessions' : mode === 'tasks' ? 'Tasks' : mode === 'trading' ? 'Trades' : 'Relapses'}
                   dataKey="value"
                   stroke={color}
                   fill={fillColor}
@@ -136,7 +152,7 @@ const TimeOfDayChart = ({ timingData }) => {
                 />
                 <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
-                  formatter={(val) => [val, mode === 'work' ? 'sessions' : 'tasks']}
+                  formatter={(val) => [val, mode === 'work' ? 'sessions' : mode === 'tasks' ? 'tasks' : mode === 'trading' ? 'trades' : 'relapses']}
                 />
               </RadarChart>
             </ResponsiveContainer>

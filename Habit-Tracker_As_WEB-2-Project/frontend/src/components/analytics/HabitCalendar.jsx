@@ -3,7 +3,7 @@ import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, 
   isFuture, isBefore, addMonths, subMonths, getDay 
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, X, CheckCircle, Clock, Shield, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, CheckCircle, Clock, Shield, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
@@ -65,6 +65,15 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       return { className: 'border-purple-500 shadow-sm', style: { backgroundColor: '#d8b4fe' } };
     }
 
+    if (activeHabit === 'trades') {
+      const hasTrade = calendarData?.trades?.includes(dateStr);
+      if (!hasTrade) return emptyStateClass;
+      const pnl = calendarData?.tradePnL?.[dateStr] || 0;
+      if (pnl > 0) return { className: 'border-green-500 shadow-sm', style: { backgroundColor: '#bbf7d0' } };
+      if (pnl < 0) return { className: 'border-red-500 shadow-sm', style: { backgroundColor: '#fecaca' } };
+      return { className: 'border-gray-500 shadow-sm', style: { backgroundColor: '#f3f4f6' } };
+    }
+
     return emptyStateClass;
   };
 
@@ -75,6 +84,10 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
     if (calendarData.productivity?.includes(dateStr)) details.push({ icon: <CheckCircle size={14}/>, label: 'Tasks Completed', color: 'text-amber-600' });
     if (calendarData.streak?.includes(dateStr)) details.push({ icon: <Shield size={14}/>, label: 'Streak Active', color: 'text-purple-600' });
     if (calendarData.streakRelapses?.includes(dateStr)) details.push({ icon: <AlertTriangle size={14}/>, label: 'Streak Relapsed', color: 'text-red-600' });
+    if (calendarData.trades?.includes(dateStr)) {
+      const pnl = calendarData.tradePnL?.[dateStr] || 0;
+      details.push({ icon: <TrendingUp size={14}/>, label: `Trade PnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`, color: pnl >= 0 ? 'text-green-600' : 'text-red-600' });
+    }
     return details;
   };
 
@@ -95,6 +108,11 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
       }
       return null;
     }
+    if (activeHabit === 'trades') {
+      const pnl = calendarData?.tradePnL?.[dateStr];
+      if (pnl !== undefined && pnl !== null) return `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(0)}`;
+      return null;
+    }
     return null;
   };
 
@@ -112,6 +130,7 @@ const HabitCalendar = ({ calendarData, selectedMonth, onMonthChange }) => {
                <option value="productivity">Tasks Data</option>
                <option value="work">Deep Work Data</option>
                <option value="streak">Commitment Streak</option>
+               <option value="trades">Trading PnL</option>
              </select>
           </div>
         </div>

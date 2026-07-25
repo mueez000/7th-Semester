@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationsContext';
@@ -11,18 +12,22 @@ import {
   X,
   Bell,
   Shield,
+  TrendingUp,
+  PanelLeftClose
 } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'To-Do', path: '/todo', icon: CheckSquare },
     { name: 'Work Timer', path: '/work', icon: Clock },
     { name: 'Streak', path: '/streak', icon: Shield },
+    { name: 'Trading', path: '/trading-journal', icon: TrendingUp },
     { name: 'Analytics', path: '/analytics', icon: BarChart2 },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Profile', path: '/profile', icon: User },
@@ -40,11 +45,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       
       {/* Sidebar */}
       <aside className={cn(
-        "fixed z-30 inset-y-0 left-0 w-68 bg-white border-r border-[#dadce0] transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 overflow-y-auto",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed z-30 inset-y-0 left-0 bg-white border-r border-[#dadce0] transform transition-all duration-300 ease-in-out lg:static lg:translate-x-0 overflow-y-auto overflow-x-hidden flex flex-col",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        isCollapsed ? "w-[80px]" : "w-[272px]"
       )}>
-        <div className="flex items-center justify-between h-16 px-6 pt-2">
-          <span className="text-2xl font-bold tracking-tight text-[#1a73e8]">HabitFlow</span>
+        <div className="flex items-center justify-between h-16 px-4 pt-2">
+          {!isCollapsed && <span className="text-2xl font-bold tracking-tight text-[#1a73e8] ml-2">HabitFlow</span>}
+          {isCollapsed && <span className="text-2xl font-bold tracking-tight text-[#1a73e8] mx-auto">HF</span>}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)} 
+            className="hidden lg:flex text-[#5f6368] p-2 hover:bg-[#f1f3f4] rounded-full"
+            title="Toggle Sidebar"
+          >
+            <PanelLeftClose size={20} className={isCollapsed ? "rotate-180 transition-transform duration-300" : "transition-transform duration-300"} />
+          </button>
           <button onClick={() => setIsOpen(false)} className="lg:hidden text-[#5f6368] p-2 hover:bg-[#f1f3f4] rounded-full">
             <X size={24} />
           </button>
@@ -71,12 +85,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     <>
                       <Icon
                         className={cn(
-                          'w-[22px] h-[22px] mr-4 shrink-0',
-                          isActive ? 'text-[#1967d2]' : 'text-[#5f6368]'
+                          'w-[22px] h-[22px] shrink-0',
+                          isActive ? 'text-[#1967d2]' : 'text-[#5f6368]',
+                          isCollapsed ? 'mx-auto' : 'mr-4'
                         )}
                       />
-                      <span className="flex-1 truncate">{item.name}</span>
-                      {showBadge && (
+                      {!isCollapsed && <span className="flex-1 truncate">{item.name}</span>}
+                      {!isCollapsed && showBadge && (
                         <span className="ml-2 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-[#d93025] text-white text-[11px] font-bold">
                           {item.badge > 9 ? '9+' : item.badge}
                         </span>
@@ -93,8 +108,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               onClick={logout}
               className="flex items-center px-4 py-3 text-[14px] font-medium text-[#d93025] rounded-r-full hover:bg-[#fce8e6] transition-colors w-full"
             >
-              <LogOut className="w-[22px] h-[22px] mr-4 text-[#d93025]" />
-              Logout
+              <LogOut className={cn('w-[22px] h-[22px] text-[#d93025] shrink-0', isCollapsed ? 'mx-auto' : 'mr-4')} />
+              {!isCollapsed && <span>Logout</span>}
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Clock, CheckCircle, Shield } from 'lucide-react';
+import { Clock, CheckCircle, Shield, TrendingUp } from 'lucide-react';
 
 const HabitTimingChart = ({ timingData }) => {
   const [view, setView] = useState('M'); // 'W' or 'M'
@@ -9,7 +9,8 @@ const HabitTimingChart = ({ timingData }) => {
   const options = {
     work: { title: 'Deep Work', icon: <Clock size={16} />, color: '#1a73e8' },
     productivity: { title: 'Tasks', icon: <CheckCircle size={16} />, color: '#fbbc04' },
-    streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' }
+    streak: { title: 'Relapse', icon: <Shield size={16} />, color: '#ef5350' },
+    trades: { title: 'Trade Entry', icon: <TrendingUp size={16} />, color: '#7c3aed' }
   };
 
   const { title, icon, color } = options[activeHabit];
@@ -127,6 +128,7 @@ const HabitTimingChart = ({ timingData }) => {
                <option value="productivity">Tasks Timing</option>
                <option value="work">Deep Work Timing</option>
                <option value="streak">Relapse Timing</option>
+               <option value="trades">Trade Entry Timing</option>
              </select>
           </div>
         </div>

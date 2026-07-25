@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Clock, ArrowRight, CheckSquare, Play, Shield } from 'lucide-react';
+import { Clock, ArrowRight, CheckSquare, Play, Shield, TrendingUp } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api'; 
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 const Dashboard = () => {
   const { user } = useAuth();
   
+  const [propAccount, setPropAccount] = useState(null);
   const [summary, setSummary] = useState({
     workHours: 0,
     streakDays: 0,
@@ -18,10 +19,11 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardSummary = async () => {
       try {
-        const [workRes, tasksRes, streakRes] = await Promise.all([
+        const [workRes, tasksRes, streakRes, propRes] = await Promise.all([
           api.get('/work/today'),
           api.get(`/todo/tasks?dueDate=${new Date().toISOString().split('T')[0]}`),
           api.get('/streak/status'),
+          api.get('/prop-account')
         ]);
 
         let computedWork = 0;
@@ -33,6 +35,10 @@ const Dashboard = () => {
 
         if (tasksRes.data.success) {
            setTodayTasks(tasksRes.data.data.filter(t => t.status !== 'completed' && t.status !== 'archived'));
+        }
+
+        if (propRes && propRes.data.success && propRes.data.data) {
+           setPropAccount(propRes.data.data);
         }
 
         if (streakRes.data.success && streakRes.data.data) {
@@ -70,7 +76,7 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Work Card */}
         <Link to="/work" className="google-card overflow-hidden group">
@@ -125,6 +131,23 @@ const Dashboard = () => {
             </div>
             <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
               View Tasks <ArrowRight size={16} className="ml-1" />
+            </div>
+          </div>
+        </Link>
+
+        {/* Trading Card */}
+        <Link to="/trading" className="google-card overflow-hidden group border border-[#dadce0] hover:border-[#10b981]">
+          <div className="bg-[#10b981] p-6 h-full text-white flex flex-col transition-transform group-hover:scale-[1.02]">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-4">
+              <TrendingUp size={24} className="text-white" />
+            </div>
+            <h3 className="text-lg font-semibold opacity-90">Funded Account</h3>
+            <div className="mt-2 flex items-baseline gap-2">
+              <p className="text-4xl font-bold">{propAccount ? `P${propAccount.currentPhase}` : 'N/A'}</p>
+              <span className="text-sm opacity-80">{propAccount?.status === 'funded' ? 'Live' : 'Evaluation'}</span>
+            </div>
+            <div className="mt-6 flex items-center text-sm font-medium opacity-90 group-hover:opacity-100 transition whitespace-nowrap">
+              Log Trade <ArrowRight size={16} className="ml-1" />
             </div>
           </div>
         </Link>

@@ -4,7 +4,7 @@ import { Layers } from 'lucide-react';
 import api from '../../services/api';
 
 const ContributionHeatmap = ({ heatmapData }) => {
-  const [mode, setMode] = useState('work'); // 'work' | 'tasks' | 'streak'
+  const [mode, setMode] = useState('work'); // 'work' | 'tasks' | 'streak' | 'trades'
   const [relapseHistory, setRelapseHistory] = useState([]);
   const [streakData, setStreakData] = useState(null);
 
@@ -75,6 +75,13 @@ const ContributionHeatmap = ({ heatmapData }) => {
       if (count <= 5) return 'bg-[#f6a059]';
       if (count <= 8) return 'bg-[#e56b25]';
       return 'bg-[#a34412]';
+    } else if (mode === 'trades') {
+      const count = heatmapData?.trades?.[dStr] || 0;
+      if (count === 0) return 'bg-[#ebedf0]';
+      if (count <= 2) return 'bg-[#d8b4fe]'; // purple shades
+      if (count <= 5) return 'bg-[#a855f7]';
+      if (count <= 8) return 'bg-[#7e22ce]';
+      return 'bg-[#4c1d95]';
     } else {
       const status = getDayStatus(date);
       if (status === 'inactive') return 'bg-[#ebedf0]';
@@ -92,6 +99,9 @@ const ContributionHeatmap = ({ heatmapData }) => {
     } else if (mode === 'tasks') {
       const count = heatmapData?.tasks?.[dStr] || 0;
       return `${count} tasks on ${displayDate}`;
+    } else if (mode === 'trades') {
+      const count = heatmapData?.trades?.[dStr] || 0;
+      return `${count} trades on ${displayDate}`;
     } else {
       const status = getDayStatus(date);
       if (status === 'inactive') return `No tracking on ${displayDate}`;
@@ -136,6 +146,12 @@ const ContributionHeatmap = ({ heatmapData }) => {
             className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${mode === 'streak' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Relapse / Streak
+          </button>
+          <button
+            onClick={() => setMode('trades')}
+            className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${mode === 'trades' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Trades
           </button>
         </div>
       </div>

@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import WorkTimer from './pages/WorkTimer';
 import StreakTracker from './pages/StreakTracker';
 import Analytics from './pages/Analytics';
+import TradingJournal from './pages/TradingJournal';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import TodoPage from './pages/TodoPage';
@@ -43,6 +44,7 @@ const AnimatedRoutes = () => {
           <Route path="work" element={<PageTransition><WorkTimer /></PageTransition>} />
           <Route path="streak" element={<PageTransition><StreakTracker /></PageTransition>} />
           <Route path="analytics" element={<PageTransition><Analytics /></PageTransition>} />
+          <Route path="trading-journal" element={<PageTransition><TradingJournal /></PageTransition>} />
           <Route path="notifications" element={<PageTransition><Notifications /></PageTransition>} />
           <Route path="profile" element={<PageTransition><Profile /></PageTransition>} />
         </Route>
